@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import * as jose from "jose";
+import bcrypt from "bcryptjs";
 
 const secretKey = (typeof process !== "undefined" && process.env?.BETTER_AUTH_SECRET)
   ? process.env.BETTER_AUTH_SECRET
@@ -24,25 +25,15 @@ export async function verifySessionToken(token: string): Promise<any | null> {
   }
 }
 
+export { signSessionToken as signJWT, verifySessionToken as verifyJWT };
+
 export async function hashPassword(password: string): Promise<string> {
-  // Use scryptSync to avoid callback/libuv thread pool issues in serverless runtimes
-  const salt = crypto.randomBytes(16);
-  const derivedKey = crypto.scryptSync(password, salt, 64, { N: 16384, r: 8, p: 1 });
-  return `${salt.toString("hex")}:${derivedKey.toString("hex")}`;
+  return bcrypt.hash(password, 10);
 }
 
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
-  const parts = storedHash.split(":");
-  if (parts.length !== 2) {
-    return false;
-  }
-  const [saltHex, keyHex] = parts;
-  const salt = Buffer.from(saltHex, "hex");
-  
-  // Use scryptSync to run synchronously in the active thread to prevent hangs in workerd
   try {
-    const derivedKey = crypto.scryptSync(password, salt, 64, { N: 16384, r: 8, p: 1 });
-    return derivedKey.toString("hex") === keyHex;
+    return await bcrypt.compare(password, storedHash);
   } catch (err) {
     console.error("verifyPassword error:", err);
     return false;

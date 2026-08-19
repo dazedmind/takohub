@@ -130,8 +130,7 @@ async function main() {
         "start_shift" TIMESTAMP NOT NULL DEFAULT NOW(),
         "end_shift" TIMESTAMP,
         "duration_minutes" INTEGER,
-        "selfie_url" TEXT NOT NULL,
-        "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
+        "selfie_url" TEXT NOT NULL
       );
     `);
 
@@ -154,8 +153,7 @@ async function main() {
         "gcash_payment" INTEGER NOT NULL DEFAULT 0,
         "free" INTEGER NOT NULL DEFAULT 0,
         "short_over" INTEGER NOT NULL,
-        "trash_leftover" TEXT,
-        "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
+        "trash_leftover" TEXT
       );
     `);
 
@@ -215,7 +213,7 @@ async function main() {
         "item_id" INTEGER NOT NULL REFERENCES "inventory_items" ("item_id") ON DELETE CASCADE,
         "quantity_used" INTEGER NOT NULL,
         "remarks" TEXT,
-        "logged_at" TIMESTAMP NOT NULL DEFAULT NOW()
+        "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `);
 

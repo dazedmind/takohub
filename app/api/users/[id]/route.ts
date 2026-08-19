@@ -1,103 +1,67 @@
-import { NextResponse } from "next/server";
+import { db } from "../../../../lib/db";
+import { user } from "../../../db/auth-schema";
 import { eq } from "drizzle-orm";
-import { hashPassword } from "@/lib/crypto";
-import { db } from "@/lib/db";
-import { user } from "@/app/db/auth-schema";
-import { isAuthError, requireRole } from "@/lib/auth-utils";
-import type { UpdateUserInput } from "@/lib/types";
+import { hashPassword } from "../../../../lib/crypto";
+import { requireRole } from "../../../../lib/auth-utils";
 
-type RouteContext = { params: Promise<{ id: string }> };
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    await requireRole(request, "ADMIN");
+    const { id } = await context.params;
+    const { name, role, password } = await request.json();
 
-export async function GET(_request: Request, context: RouteContext) {
-  const authResult = await requireRole("ADMIN");
-  if (isAuthError(authResult)) return authResult;
+    if (!name || !role) {
+      return Response.json({ message: "Name and role are required" }, { status: 400 });
+    }
 
-  const { id } = await context.params;
+    const updateData: any = { name, role };
+    if (password && password.trim() !== "") {
+      updateData.password = await hashPassword(password);
+    }
 
-  const [foundUser] = await db
-    .select({
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.username, // Maintain email alias for frontend compatibility
-      role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    })
-    .from(user)
-    .where(eq(user.id, id));
-
-  if (!foundUser) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ user: foundUser });
-}
-
-export async function PATCH(request: Request, context: RouteContext) {
-  const authResult = await requireRole("ADMIN");
-  if (isAuthError(authResult)) return authResult;
-
-  const { id } = await context.params;
-  const body = (await request.json()) as UpdateUserInput;
-
-  const [existing] = await db.select().from(user).where(eq(user.id, id));
-
-  if (!existing) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-
-  const userIdentifier = (body.email || (body as any).username);
-
-  await db
-    .update(user)
-    .set({
-      ...(body.name !== undefined && { name: body.name.trim() }),
-      ...(userIdentifier !== undefined && { username: userIdentifier.trim().toLowerCase() }),
-      ...(body.role !== undefined && { role: body.role }),
-      updatedAt: new Date(),
-    })
-    .where(eq(user.id, id));
-
-  if (body.password) {
-    const hashedPassword = await hashPassword(body.password);
-    await db
+    const [updated] = await db
       .update(user)
-      .set({ password: hashedPassword, updatedAt: new Date() })
-      .where(eq(user.id, id));
+      .set(updateData)
+      .where(eq(user.id, id))
+      .returning({
+        id: user.id,
+        name: user.name,
+        username: user.username,
+        role: user.role,
+        updatedAt: user.updatedAt,
+      });
+
+    return Response.json(updated);
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Forbidden" }, { status: 403 });
   }
-
-  const [updatedUser] = await db
-    .select({
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.username, // Maintain email alias for frontend compatibility
-      role: user.role,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    })
-    .from(user)
-    .where(eq(user.id, id));
-
-  return NextResponse.json({ user: updatedUser });
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
-  const authResult = await requireRole("ADMIN");
-  if (isAuthError(authResult)) return authResult;
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+  return PUT(request, context);
+}
 
-  const { id } = await context.params;
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    await requireRole(request, "ADMIN");
+    const { id } = await context.params;
 
-  if (authResult.user.id === id) {
-    return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
+    // Prevent admin from deleting themselves
+    const session = await requireRole(request, "ADMIN");
+    if (session.id === id) {
+      return Response.json({ message: "You cannot delete yourself" }, { status: 400 });
+    }
+
+    const [deleted] = await db
+      .delete(user)
+      .where(eq(user.id, id))
+      .returning({
+        id: user.id,
+        name: user.name,
+      });
+
+    return Response.json(deleted);
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Forbidden" }, { status: 403 });
   }
-
-  const [deleted] = await db.delete(user).where(eq(user.id, id)).returning();
-
-  if (!deleted) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ success: true });
 }

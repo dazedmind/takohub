@@ -143,3 +143,18 @@ export function formatShortOver(amount: number): {
     className: "text-zinc-600 dark:text-zinc-400",
   };
 }
+
+export function calculateTotalPlates(cheese: number, octobits: number, crab: number): number {
+  return (cheese || 0) + (octobits || 0) + (crab || 0);
+}
+
+export function calculateShortOver(
+  cashOnHand: number,
+  gcashPayment: number,
+  expenses: number,
+  salary: number,
+  totalSales: number
+): number {
+  return (cashOnHand || 0) + (gcashPayment || 0) + (expenses || 0) + (salary || 0) - totalSales;
+}
+

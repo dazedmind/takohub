@@ -1,20 +1,11 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-
-export const runtime = "nodejs";
-
 export async function POST() {
-  try {
-    const cookieStore = await cookies();
-    cookieStore.set("auth_session", "", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 0, // Immediately expire
-      path: "/",
-    });
-    return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
-  }
+  return Response.json(
+    { success: true },
+    {
+      status: 200,
+      headers: {
+        "Set-Cookie": "session_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+      },
+    }
+  );
 }

@@ -1,26 +1,13 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { verifySessionToken } from "@/lib/crypto";
+import { getSession } from "../../../../lib/auth-utils";
 
-export const runtime = "nodejs";
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_session")?.value;
-    
-    if (!token) {
-      return NextResponse.json({ session: null });
+    const session = await getSession(request);
+    if (!session) {
+      return Response.json({ user: null, session: null }, { status: 200 });
     }
-    
-    const user = await verifySessionToken(token);
-    
-    if (!user) {
-      return NextResponse.json({ session: null });
-    }
-    
-    return NextResponse.json({ session: { user } });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return Response.json({ user: session, session: { user: session } }, { status: 200 });
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Internal server error" }, { status: 500 });
   }
 }

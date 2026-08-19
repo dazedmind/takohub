@@ -1,91 +1,48 @@
-import { NextResponse } from "next/server";
+import { db } from "../../../../lib/db";
+import { branches } from "../../../db/schema";
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { branches, orders, branchInventory } from "@/app/db/schema";
-import { isAuthError, requireAuth, requireRole } from "@/lib/auth-utils";
-import type { UpdateBranchInput } from "@/lib/types";
+import { requireRole } from "../../../../lib/auth-utils";
 
-type RouteContext = { params: Promise<{ id: string }> };
-
-export async function GET(_request: Request, context: RouteContext) {
-  const authResult = await requireAuth();
-  if (isAuthError(authResult)) return authResult;
-
-  const { id } = await context.params;
-  const branchId = Number(id);
-
-  if (Number.isNaN(branchId)) {
-    return NextResponse.json({ error: "Invalid branch ID" }, { status: 400 });
-  }
-
-  const [branch] = await db
-    .select()
-    .from(branches)
-    .where(eq(branches.branchId, branchId));
-
-  if (!branch) {
-    return NextResponse.json({ error: "Branch not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ branch });
-}
-
-export async function PATCH(request: Request, context: RouteContext) {
-  const authResult = await requireRole("ADMIN");
-  if (isAuthError(authResult)) return authResult;
-
-  const { id } = await context.params;
-  const branchId = Number(id);
-
-  if (Number.isNaN(branchId)) {
-    return NextResponse.json({ error: "Invalid branch ID" }, { status: 400 });
-  }
-
-  const body = (await request.json()) as UpdateBranchInput;
-
-  const [branch] = await db
-    .update(branches)
-    .set({
-      ...(body.branchName !== undefined && { branchName: body.branchName.trim() }),
-      ...(body.address !== undefined && { address: body.address.trim() || null }),
-    })
-    .where(eq(branches.branchId, branchId))
-    .returning();
-
-  if (!branch) {
-    return NextResponse.json({ error: "Branch not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ branch });
-}
-
-export async function DELETE(_request: Request, context: RouteContext) {
-  const authResult = await requireRole("ADMIN");
-  if (isAuthError(authResult)) return authResult;
-
-  const { id } = await context.params;
-  const branchId = Number(id);
-
-  if (Number.isNaN(branchId)) {
-    return NextResponse.json({ error: "Invalid branch ID" }, { status: 400 });
-  }
-
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
+    await requireRole(request, "ADMIN");
+    const { id } = await context.params;
+    const branchId = parseInt(id, 10);
+    const { branchName, address } = await request.json();
+
+    if (!branchName) {
+      return Response.json({ message: "Branch name is required" }, { status: 400 });
+    }
+
+    const [updated] = await db
+      .update(branches)
+      .set({ branchName, address })
+      .where(eq(branches.branchId, branchId))
+      .returning();
+
+    return Response.json(updated);
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Forbidden" }, { status: 403 });
+  }
+}
+
+export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+  return PUT(request, context);
+}
+
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  try {
+    await requireRole(request, "ADMIN");
+    const { id } = await context.params;
+    const branchId = parseInt(id, 10);
+
     const [deleted] = await db
       .delete(branches)
       .where(eq(branches.branchId, branchId))
       .returning();
 
-    if (!deleted) {
-      return NextResponse.json({ error: "Branch not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Failed to delete branch";
-    return NextResponse.json(
-      { error: msg },
-      { status: 500 }
-    );
+    return Response.json(deleted);
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Forbidden" }, { status: 403 });
   }
 }

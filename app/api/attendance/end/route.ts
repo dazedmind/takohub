@@ -1,129 +1,171 @@
-import { NextResponse } from "next/server";
+import { db } from "../../../../lib/db";
 import { and, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { sessionLog, sales } from "@/app/db/schema";
-import { requireAuth, isAuthError } from "@/lib/auth-utils";
-import {
-  calculatePlatesSold,
-  calculateTotalSales,
-  calculateSalary,
-  calculateRunningDuration,
-} from "@/lib/business-logic";
-import type { EndShiftSalesInput } from "@/lib/types";
+import { sessionLog, sales, branchInventory, inventoryUsageLog, inventoryItems } from "../../../db/schema";
+import { requireAuth } from "../../../../lib/auth-utils";
+import { calculateTotalPlates, calculateTotalSales, calculateSalary, calculateShortOver } from "../../../../lib/business-logic";
 
 export async function POST(request: Request) {
-  const authResult = await requireAuth();
-  if (isAuthError(authResult)) return authResult;
-
-  const user = authResult.user;
-
   try {
-    const body = (await request.json()) as EndShiftSalesInput & {
-      eodReport?: string;
-    };
+    const session = await requireAuth(request);
 
-    if (!body.sessionId) {
-      return NextResponse.json(
-        { error: "Active shift session ID is required" },
-        { status: 400 }
-      );
+    // Find the active shift
+    const activeShifts = await db
+      .select()
+      .from(sessionLog)
+      .where(and(eq(sessionLog.userId, session.id), eq(sessionLog.shiftStatus, "ACTIVE")));
+
+    if (activeShifts.length === 0) {
+      return Response.json({ message: "No active shift found to end" }, { status: 400 });
     }
 
-    // Verify session exists and is ACTIVE
-    const shift = await db.query.sessionLog.findFirst({
-      where: and(
-        eq(sessionLog.sessionId, body.sessionId),
-        eq(sessionLog.shiftStatus, "ACTIVE")
-      ),
-    });
-
-    if (!shift) {
-      return NextResponse.json(
-        { error: "Active shift session not found or already completed" },
-        { status: 404 }
-      );
-    }
-
-    // Only the employee who started the shift or ADMIN can end it
-    if (user.role !== "ADMIN" && shift.userId !== user.id) {
-      return NextResponse.json(
-        { error: "You cannot end another employee's shift" },
-        { status: 403 }
-      );
-    }
-
+    const activeShift = activeShifts[0];
     const endTime = new Date();
-    const duration = calculateRunningDuration(shift.startShift, endTime);
+    const startTime = new Date(activeShift.startShift);
+    const durationMinutes = Math.max(1, Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60)));
 
-    // If Inventory Manager or Admin ending shift with EOD Report (no sales)
-    const isIM = user.role === "IM";
-    const reportText = body.eodReport?.trim() || body.trashLeftover?.trim() || "";
+    const body = await request.json();
 
-    const cheese = isIM ? 0 : Math.max(0, Number(body.cheese) || 0);
-    const octobits = isIM ? 0 : Math.max(0, Number(body.octobits) || 0);
-    const crab = isIM ? 0 : Math.max(0, Number(body.crab) || 0);
-    const totalPlates = isIM ? 0 : calculatePlatesSold({ cheese, octobits, crab });
-    const totalSales = isIM ? 0 : calculateTotalSales(totalPlates);
-    const salary = isIM ? 0 : calculateSalary(totalPlates);
+    if (session.role === "BS") {
+      // Branch Seller ending shift with Sales Log
+      const cheese = parseInt(body.cheese || 0, 10);
+      const octobits = parseInt(body.octobits || 0, 10);
+      const crab = parseInt(body.crab || 0, 10);
+      const cashOnhand = parseInt(body.cashOnhand || 0, 10);
+      const expenses = parseInt(body.expenses || 0, 10);
+      const gcashPayment = parseInt(body.gcashPayment || 0, 10);
+      const free = parseInt(body.free || 0, 10);
+      const trashLeftover = body.trashLeftover || "";
 
-    const cashOnhand = isIM ? 0 : Math.max(0, Number(body.cashOnhand) || 0);
-    const expenses = isIM ? 0 : Math.max(0, Number(body.expenses) || 0);
-    const gcashPayment = isIM ? 0 : Math.max(0, Number(body.gcashPayment) || 0);
-    const free = isIM ? 0 : Math.max(0, Number(body.free) || 0);
-    const shortOver = isIM ? 0 : Number(body.shortOver) || 0;
-    const trashLeftover = isIM
-      ? reportText ? `EOD Report: ${reportText}` : "EOD Shift Ended"
-      : reportText;
+      // Perform business logic calculations
+      const totalPlates = calculateTotalPlates(cheese, octobits, crab);
+      const totalSales = calculateTotalSales(totalPlates);
+      const salary = calculateSalary(totalPlates);
+      const shortOver = calculateShortOver(cashOnhand, gcashPayment, expenses, salary, totalSales);
 
-    // Record sales log
-    const [salesRecord] = await db
-      .insert(sales)
-      .values({
-        sessionId: shift.sessionId,
-        userId: shift.userId,
-        branchId: shift.branchId,
-        date: endTime,
-        cheese,
-        octobits,
-        crab,
-        totalPlates,
-        totalSales,
-        cashOnhand,
-        expenses,
-        salary,
-        gcashPayment,
-        free,
-        shortOver,
-        trashLeftover,
-      })
-      .returning();
+      // Create Sales Record
+      const [salesRecord] = await db
+        .insert(sales)
+        .values({
+          sessionId: activeShift.sessionId,
+          userId: session.id,
+          branchId: activeShift.branchId,
+          cheese,
+          octobits,
+          crab,
+          totalPlates,
+          totalSales,
+          cashOnhand,
+          expenses,
+          salary,
+          gcashPayment,
+          free,
+          shortOver,
+          trashLeftover,
+          date: endTime,
+        })
+        .returning();
 
-    // Mark shift COMPLETED
-    const [completedShift] = await db
-      .update(sessionLog)
-      .set({
-        endShift: endTime,
-        durationMinutes: duration.totalMinutes,
-        shiftStatus: "COMPLETED",
-      })
-      .where(eq(sessionLog.sessionId, shift.sessionId))
-      .returning();
+      // Automatically deduct branch inventory for Paper Plates (itemId 9) and Toothpicks (itemId 10)
+      // Paper Plates: 1 pc per plate sold (including free plates)
+      // Toothpicks: 1 box/pcs or similar. Let's deduct 1 pc of plates and 1 pc of toothpicks per plate sold.
+      const platesUsed = totalPlates + free;
+      
+      const deductItems = [
+        { itemId: 9, qty: platesUsed, remark: "Paper plates used for plates sold & free" },
+        { itemId: 10, qty: platesUsed, remark: "Toothpicks used for plates sold & free" },
+      ];
 
-    return NextResponse.json(
-      {
-        message: isIM
-          ? "Shift ended successfully with EOD Report."
-          : "Shift ended successfully with complete Sales Log.",
-        shift: completedShift,
-        sales: salesRecord,
-        duration: duration.formattedString,
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("End shift error:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to end shift";
-    return NextResponse.json({ error: message }, { status: 500 });
+      for (const entry of deductItems) {
+        if (entry.qty > 0) {
+          const branchStock = await db
+            .select()
+            .from(branchInventory)
+            .where(and(eq(branchInventory.branchId, activeShift.branchId), eq(branchInventory.itemId, entry.itemId)));
+
+          if (branchStock.length > 0) {
+            const currentRecord = branchStock[0];
+            let newStock = currentRecord.currentStock - entry.qty;
+            if (newStock < 0) newStock = 0;
+
+            let status: "OUT_OF_STOCK" | "LOW_STOCK" | "IN_STOCK" = "OUT_OF_STOCK";
+            if (newStock > 10) status = "IN_STOCK";
+            else if (newStock > 0) status = "LOW_STOCK";
+
+            // Update branch stock
+            await db
+              .update(branchInventory)
+              .set({
+                currentStock: newStock,
+                status,
+                lastUpdated: endTime,
+              })
+              .where(eq(branchInventory.branchInventoryId, currentRecord.branchInventoryId));
+
+            // Log usage
+            await db.insert(inventoryUsageLog).values({
+              sessionId: activeShift.sessionId,
+              branchId: activeShift.branchId,
+              itemId: entry.itemId,
+              quantityUsed: entry.qty,
+              remarks: entry.remark,
+              createdAt: endTime,
+            });
+          }
+        }
+      }
+
+      // Update shift status
+      await db
+        .update(sessionLog)
+        .set({
+          shiftStatus: "COMPLETED",
+          endShift: endTime,
+          durationMinutes,
+        })
+        .where(eq(sessionLog.sessionId, activeShift.sessionId));
+
+      return Response.json({ success: true, sales: salesRecord });
+    } else {
+      // Inventory Manager (IM) or ADMIN ending shift
+      const notes = body.notes || "No EOD report notes provided.";
+
+      // For managers/admins, create a Sales record where trashLeftover stores the EOD notes, and other stats are 0
+      const [salesRecord] = await db
+        .insert(sales)
+        .values({
+          sessionId: activeShift.sessionId,
+          userId: session.id,
+          branchId: activeShift.branchId,
+          cheese: 0,
+          octobits: 0,
+          crab: 0,
+          totalPlates: 0,
+          totalSales: 0,
+          cashOnhand: 0,
+          expenses: 0,
+          salary: 0,
+          gcashPayment: 0,
+          free: 0,
+          shortOver: 0,
+          trashLeftover: notes,
+          date: endTime,
+        })
+        .returning();
+
+      // Update shift status
+      await db
+        .update(sessionLog)
+        .set({
+          shiftStatus: "COMPLETED",
+          endShift: endTime,
+          durationMinutes,
+        })
+        .where(eq(sessionLog.sessionId, activeShift.sessionId));
+
+      return Response.json({ success: true, notes, sales: salesRecord });
+    }
+  } catch (error: any) {
+    console.error("End shift API error:", error);
+    return Response.json({ message: error.message || "Unauthorized" }, { status: 401 });
   }
 }

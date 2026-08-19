@@ -10,6 +10,7 @@ export default defineConfig({
     vinext({
       cache: { data: kvDataAdapter(), cdn: cdnAdapter() },
       images: { optimizer: imagesOptimizer() },
+      prerender: { routes: "*" },
     }),
     cloudflare({
       viteEnvironment: {
@@ -18,7 +19,4 @@ export default defineConfig({
       },
     }),
   ],
-  optimizeDeps: {
-    exclude: ["@neondatabase/serverless"],
-  },
 });

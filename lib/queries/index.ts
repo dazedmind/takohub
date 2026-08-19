@@ -22,7 +22,8 @@ export function useBranchesQuery() {
     queryFn: async () => {
       const res = await fetch("/api/branches");
       if (!res.ok) throw new Error("Failed to load branches");
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? { branches: data } : data;
     },
   });
 }
@@ -89,7 +90,8 @@ export function useCentralInventoryQuery(enabled = true) {
     queryFn: async () => {
       const res = await fetch("/api/inventory");
       if (!res.ok) throw new Error("Failed to load central inventory");
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? { items: data } : data;
     },
     enabled,
     refetchInterval: 10000,
@@ -126,7 +128,43 @@ export function useBranchInventoryQuery(branchId?: number | "", enabled = true) 
         return { hasActiveShift: false, branchItems: [] };
       }
       if (!res.ok) throw new Error(data.error || "Failed to load branch inventory");
-      return data;
+      
+      const result = Array.isArray(data) ? { branchItems: data } : data;
+      
+      if (result.branchName === undefined && branchId) {
+        try {
+          const bRes = await fetch("/api/branches");
+          if (bRes.ok) {
+            const bData = await bRes.json();
+            const branchesList = Array.isArray(bData) ? bData : (bData.branches || []);
+            const currentBranch = branchesList.find((b: any) => b.branchId === Number(branchId));
+            if (currentBranch) {
+              result.branchName = currentBranch.branchName;
+            }
+          }
+        } catch {}
+      }
+
+      if (result.hasActiveShift === undefined) {
+        try {
+          const sRes = await fetch("/api/attendance/active");
+          if (sRes.ok) {
+            const sData = await sRes.json();
+            const activeShift = sData?.activeShift;
+            if (activeShift) {
+              result.hasActiveShift = Number(activeShift.branchId) === Number(branchId);
+            } else {
+              result.hasActiveShift = false;
+            }
+          } else {
+            result.hasActiveShift = false;
+          }
+        } catch {
+          result.hasActiveShift = false;
+        }
+      }
+
+      return result;
     },
     enabled,
     refetchInterval: 10000,
@@ -139,7 +177,8 @@ export function useMovementsQuery(enabled = true) {
     queryFn: async () => {
       const res = await fetch("/api/inventory/movements");
       if (!res.ok) throw new Error("Failed to load inventory movements");
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? { movements: data } : data;
     },
     enabled,
   });
@@ -151,7 +190,8 @@ export function useCatalogQuery(enabled = true) {
     queryFn: async () => {
       const res = await fetch("/api/inventory/catalog");
       if (!res.ok) throw new Error("Failed to load product catalog");
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? { items: data } : data;
     },
     enabled,
   });
@@ -209,7 +249,8 @@ export function useOrdersQuery() {
     queryFn: async () => {
       const res = await fetch("/api/orders");
       if (!res.ok) throw new Error("Failed to load orders");
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? { orders: data } : data;
     },
   });
 }
@@ -346,7 +387,8 @@ export function useUsersQuery(enabled = true) {
     queryFn: async () => {
       const res = await fetch("/api/users");
       if (!res.ok) throw new Error("Failed to load users");
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? { users: data } : data;
     },
     enabled,
   });

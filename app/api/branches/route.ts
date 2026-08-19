@@ -1,35 +1,45 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { branches } from "@/app/db/schema";
-import { isAuthError, requireAuth, requireRole } from "@/lib/auth-utils";
-import type { CreateBranchInput } from "@/lib/types";
+import { db } from "../../../lib/db";
+import { branches, branchInventory, inventoryItems } from "../../db/schema";
+import { requireRole } from "../../../lib/auth-utils";
 
-export async function GET() {
-  const authResult = await requireAuth();
-  if (isAuthError(authResult)) return authResult;
-
-  const allBranches = await db.select().from(branches).orderBy(branches.branchId);
-
-  return NextResponse.json({ branches: allBranches });
+export async function GET(request: Request) {
+  try {
+    // Anyone who is authenticated can see branches
+    await requireRole(request, "ADMIN", "BS", "IM");
+    const allBranches = await db.select().from(branches);
+    return Response.json(allBranches);
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Unauthorized" }, { status: error.message === "Unauthorized" ? 401 : 403 });
+  }
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireRole("ADMIN");
-  if (isAuthError(authResult)) return authResult;
+  try {
+    await requireRole(request, "ADMIN");
+    const { branchName, address } = await request.json();
 
-  const body = (await request.json()) as CreateBranchInput;
+    if (!branchName) {
+      return Response.json({ message: "Branch name is required" }, { status: 400 });
+    }
 
-  if (!body.branchName?.trim()) {
-    return NextResponse.json({ error: "Branch name is required" }, { status: 400 });
+    const [newBranch] = await db
+      .insert(branches)
+      .values({ branchName, address })
+      .returning();
+
+    // Map all existing master inventory items to this new branch with stock 0
+    const allItems = await db.select().from(inventoryItems);
+    for (const item of allItems) {
+      await db.insert(branchInventory).values({
+        branchId: newBranch.branchId,
+        itemId: item.itemId,
+        currentStock: 0,
+        status: "OUT_OF_STOCK"
+      }).onConflictDoNothing();
+    }
+
+    return Response.json(newBranch, { status: 201 });
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Forbidden" }, { status: 403 });
   }
-
-  const [branch] = await db
-    .insert(branches)
-    .values({
-      branchName: body.branchName.trim(),
-      address: body.address?.trim() || null,
-    })
-    .returning();
-
-  return NextResponse.json({ branch }, { status: 201 });
 }

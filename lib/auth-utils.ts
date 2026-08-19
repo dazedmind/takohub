@@ -5,7 +5,7 @@ import type { SessionUser, UserRole } from "@/lib/types";
 
 export async function getSessionUser(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get("auth_session")?.value;
+  const token = cookieStore.get("session_token")?.value;
   if (!token) {
     return null;
   }
@@ -13,12 +13,18 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return payload as SessionUser | null;
 }
 
-export async function requireAuth(): Promise<
+export { getSessionUser as getSession };
+
+export async function requireAuth(request?: any): Promise<
   { user: SessionUser } | NextResponse
 > {
   const user = await getSessionUser();
+  const isOriginalApi = request && (request instanceof Request || (typeof request === "object" && "headers" in request));
 
   if (!user) {
+    if (isOriginalApi) {
+      throw new Error("Unauthorized");
+    }
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -26,19 +32,39 @@ export async function requireAuth(): Promise<
 }
 
 export async function requireRole(
-  ...roles: UserRole[]
+  firstArg: any,
+  ...restRoles: any[]
 ): Promise<{ user: SessionUser } | NextResponse> {
-  const result = await requireAuth();
+  const isOriginalApi = firstArg && (firstArg instanceof Request || (typeof firstArg === "object" && "headers" in firstArg));
+  
+  let roles: UserRole[] = [];
+  if (isOriginalApi) {
+    roles = restRoles as UserRole[];
+  } else {
+    roles = [firstArg, ...restRestArg(restRoles)].filter(Boolean) as UserRole[];
+  }
+
+  const result = await requireAuth(isOriginalApi ? { headers: {} } : undefined);
 
   if (result instanceof NextResponse) {
+    if (isOriginalApi) {
+      throw new Error("Unauthorized");
+    }
     return result;
   }
 
   if (!roles.includes(result.user.role)) {
+    if (isOriginalApi) {
+      throw new Error("Forbidden");
+    }
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   return result;
+}
+
+function restRestArg(args: any[]): any[] {
+  return args;
 }
 
 export function isAuthError(

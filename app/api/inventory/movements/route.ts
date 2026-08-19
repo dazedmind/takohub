@@ -1,17 +1,15 @@
-import { NextResponse } from "next/server";
-import { desc, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { inventoryMovements, inventoryItems, branches } from "@/app/db/schema";
-import { user as userTable } from "@/app/db/auth-schema";
-import { requireRole, isAuthError } from "@/lib/auth-utils";
+import { db } from "../../../../lib/db";
+import { eq, desc } from "drizzle-orm";
+import { inventoryMovements, inventoryItems, branches } from "../../../db/schema";
+import { user } from "../../../db/auth-schema";
+import { requireRole } from "../../../../lib/auth-utils";
 
-export async function GET() {
-  // Admin and Inventory Manager can review movements audit trail
-  const authResult = await requireRole("ADMIN", "IM");
-  if (isAuthError(authResult)) return authResult;
-
+export async function GET(request: Request) {
   try {
-    const rows = await db
+    await requireRole(request, "ADMIN", "IM");
+
+    // Fetch movements joined with items and user details
+    const movements = await db
       .select({
         movementId: inventoryMovements.movementId,
         itemId: inventoryMovements.itemId,
@@ -24,27 +22,20 @@ export async function GET() {
         previousBalance: inventoryMovements.previousBalance,
         newBalance: inventoryMovements.newBalance,
         userId: inventoryMovements.userId,
-        userName: userTable.name,
+        userName: user.name,
         referenceId: inventoryMovements.referenceId,
         reason: inventoryMovements.reason,
         createdAt: inventoryMovements.createdAt,
       })
       .from(inventoryMovements)
-      .innerJoin(
-        inventoryItems,
-        eq(inventoryMovements.itemId, inventoryItems.itemId)
-      )
+      .innerJoin(inventoryItems, eq(inventoryMovements.itemId, inventoryItems.itemId))
       .leftJoin(branches, eq(inventoryMovements.branchId, branches.branchId))
-      .leftJoin(userTable, eq(inventoryMovements.userId, userTable.id))
+      .innerJoin(user, eq(inventoryMovements.userId, user.id))
       .orderBy(desc(inventoryMovements.createdAt))
       .limit(100);
 
-    return NextResponse.json({ movements: rows });
-  } catch (error) {
-    console.error("Inventory movements error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch inventory movements" },
-      { status: 500 }
-    );
+    return Response.json(movements);
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Unauthorized" }, { status: 401 });
   }
 }

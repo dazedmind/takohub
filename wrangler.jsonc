@@ -1,12 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sc-management",
-  "compatibility_date": "2026-08-16",
+  "name": "takohub",
+  "compatibility_date": "2026-08-18",
   "compatibility_flags": [
-    "nodejs_compat",
-    "no_handle_cross_request_promise_resolution"
+    "nodejs_compat"
   ],
-  "main": "worker-wrapper.js",
+  "main": "vinext/server/fetch-handler",
   "assets": {
     "directory": "dist/client",
     "not_found_handling": "none",
@@ -23,5 +22,8 @@
       "binding": "VINEXT_KV_CACHE",
       "id": "81ba86a103a549acb3b177704763e205"
     }
-  ]
+  ],
+  "vars": {
+    "DATABASE_URL": "postgresql://neondb_owner:npg_BjTs9W8mxHkX@ep-red-hall-ahgu44tv-pooler.c-3.us-east-1.aws.neon.tech/neondb?uselibpqcompat=true&sslmode=require&channel_binding=require"
+  }
 }

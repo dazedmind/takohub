@@ -1,44 +1,21 @@
-import { NextResponse } from "next/server";
-import { and, desc, eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { orders, branches, sessionLog } from "@/app/db/schema";
-import { user as userTable } from "@/app/db/auth-schema";
-import { requireAuth, isAuthError } from "@/lib/auth-utils";
-import type { CreateOrderInput, OrderBasketItem, OrderWithDetails } from "@/lib/types";
+import { db } from "../../../lib/db";
+import { eq, desc } from "drizzle-orm";
+import { orders, branches } from "../../db/schema";
+import { user } from "../../db/auth-schema";
+import { requireAuth } from "../../../lib/auth-utils";
 
 export async function GET(request: Request) {
-  const authResult = await requireAuth();
-  if (isAuthError(authResult)) return authResult;
-
-  const currentUser = authResult.user;
-  const { searchParams } = new URL(request.url);
-
-  const branchIdParam = searchParams.get("branchId");
-  const statusParam = searchParams.get("status");
-
   try {
-    const conditions = [];
+    const session = await requireAuth(request);
 
-    if (currentUser.role === "BS") {
-      // Branch seller can see orders they placed or their branch
-      conditions.push(eq(orders.orderedBy, currentUser.id));
-    } else if (branchIdParam) {
-      conditions.push(eq(orders.branchId, Number(branchIdParam)));
-    }
-
-    if (statusParam) {
-      conditions.push(eq(orders.status, statusParam as any));
-    }
-
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-    const rows = await db
+    // Join orders with branch and user details
+    let query = db
       .select({
         orderId: orders.orderId,
         branchId: orders.branchId,
         branchName: branches.branchName,
         orderedBy: orders.orderedBy,
-        orderedByName: userTable.name,
+        orderedByName: user.name,
         status: orders.status,
         orderList: orders.orderList,
         notes: orders.notes,
@@ -48,100 +25,46 @@ export async function GET(request: Request) {
       })
       .from(orders)
       .innerJoin(branches, eq(orders.branchId, branches.branchId))
-      .innerJoin(userTable, eq(orders.orderedBy, userTable.id))
-      .where(whereClause)
+      .innerJoin(user, eq(orders.orderedBy, user.id))
       .orderBy(desc(orders.createdOn));
 
-    const formattedOrders: OrderWithDetails[] = rows.map((row) => ({
-      ...row,
-      items: (row.orderList as OrderBasketItem[]) || [],
-    }));
+    let results;
+    if (session.role === "BS") {
+      // Find the user's active shift branch, or let them filter by their own branch
+      // For simplicity, find branches they are related to or filter by their own order
+      results = await query.where(eq(orders.orderedBy, session.id));
+    } else {
+      results = await query;
+    }
 
-    return NextResponse.json({ orders: formattedOrders });
-  } catch (error) {
-    console.error("Orders list error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch orders" },
-      { status: 500 }
-    );
+    return Response.json(results);
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Unauthorized" }, { status: 401 });
   }
 }
 
 export async function POST(request: Request) {
-  const authResult = await requireAuth();
-  if (isAuthError(authResult)) return authResult;
-
-  const currentUser = authResult.user;
-
   try {
-    const body = (await request.json()) as CreateOrderInput;
+    const session = await requireAuth(request);
+    const { branchId, orderList, notes } = await request.json();
 
-    if (currentUser.role === "BS") {
-      const activeShift = await db.query.sessionLog.findFirst({
-        where: and(
-          eq(sessionLog.userId, currentUser.id),
-          eq(sessionLog.shiftStatus, "ACTIVE")
-        ),
-      });
-
-      if (!activeShift) {
-        return NextResponse.json(
-          { error: "Start your shift to request branch supplies." },
-          { status: 403 }
-        );
-      }
-
-      body.branchId = activeShift.branchId;
+    if (!branchId || !orderList || !Array.isArray(orderList) || orderList.length === 0) {
+      return Response.json({ message: "Branch ID and order list are required" }, { status: 400 });
     }
 
-    if (!body.branchId) {
-      return NextResponse.json(
-        { error: "Branch ID is required to place an order" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.items || !Array.isArray(body.items) || body.items.length === 0) {
-      return NextResponse.json(
-        { error: "Order basket cannot be empty" },
-        { status: 400 }
-      );
-    }
-
-    // Validate quantities
-    for (const item of body.items) {
-      if (!item.itemId || Number(item.quantity) <= 0) {
-        return NextResponse.json(
-          { error: `Invalid item or quantity for: ${item.itemName || "Item"}` },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Insert order as PENDING
     const [newOrder] = await db
       .insert(orders)
       .values({
-        branchId: body.branchId,
-        orderedBy: currentUser.id,
+        branchId: parseInt(branchId, 10),
+        orderedBy: session.id,
         status: "PENDING",
-        orderList: body.items,
-        notes: body.notes?.trim() || null,
-        createdOn: new Date(),
+        orderList,
+        notes: notes || "",
       })
       .returning();
 
-    return NextResponse.json(
-      {
-        message: "Order request submitted successfully (Pending review by Inventory Manager)",
-        order: newOrder,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error("Create order error:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to create order";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return Response.json(newOrder, { status: 201 });
+  } catch (error: any) {
+    return Response.json({ message: error.message || "Unauthorized" }, { status: 401 });
   }
 }

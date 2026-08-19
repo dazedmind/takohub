@@ -1,66 +1,57 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { db } from "../../../../lib/db";
 import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { user } from "@/app/db/auth-schema";
-import { verifyPassword, signSessionToken } from "@/lib/crypto";
-
-export const runtime = "nodejs";
+import { user } from "../../../db/auth-schema";
+import { hashPassword, signJWT, verifyPassword } from "../../../../lib/crypto";
 
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
-    
+
     if (!username || !password) {
-      return NextResponse.json({ message: "Username and password are required" }, { status: 400 });
+      return Response.json({ message: "Username and password are required" }, { status: 400 });
     }
-    
-    const rawIdentifier = username.trim().toLowerCase();
-    
-    // Find the user matching the exact username directly
-    const [foundUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.username, rawIdentifier))
-      .limit(1);
-      
-    if (!foundUser || !foundUser.password) {
-      return NextResponse.json({ message: "Invalid username or password" }, { status: 400 });
+
+    // Lookup user
+    const foundUsers = await db.select().from(user).where(eq(user.username, username.toLowerCase().trim()));
+    if (foundUsers.length === 0) {
+      return Response.json({ message: "Invalid username or password" }, { status: 401 });
     }
-    
-    // Verify password hash
-    const isValid = await verifyPassword(password, foundUser.password);
-    if (!isValid) {
-      return NextResponse.json({ message: "Invalid username or password" }, { status: 400 });
+
+    const foundUser = foundUsers[0];
+
+    // Check password
+    const isPasswordMatch = await verifyPassword(password, foundUser.password);
+    if (!isPasswordMatch) {
+      return Response.json({ message: "Invalid username or password" }, { status: 401 });
     }
-    
-    // Create session payload (retains 'email' alias matching client SessionUser requirements)
-    const sessionUser = {
+
+    // Sign JWT
+    const token = await signJWT({
       id: foundUser.id,
       name: foundUser.name,
       username: foundUser.username,
-      email: foundUser.username,
       role: foundUser.role,
-      createdAt: foundUser.createdAt,
-      updatedAt: foundUser.updatedAt,
-    };
-    
-    // Sign session token
-    const token = await signSessionToken(sessionUser);
-    
-    // Set cookie
-    const cookieStore = await cookies();
-    cookieStore.set("auth_session", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: "/",
     });
-    
-    return NextResponse.json({ user: sessionUser });
-  } catch (err: any) {
-    console.error("Login route error:", err);
-    return NextResponse.json({ message: err.message || "An error occurred during login." }, { status: 500 });
+
+    const userPayload = {
+      id: foundUser.id,
+      name: foundUser.name,
+      username: foundUser.username,
+      email: foundUser.username, // Alias
+      role: foundUser.role,
+    };
+
+    return Response.json(
+      { success: true, user: userPayload },
+      {
+        status: 200,
+        headers: {
+          "Set-Cookie": `session_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${60 * 60 * 24}`,
+        },
+      }
+    );
+  } catch (error: any) {
+    console.error("Login API Error:", error);
+    return Response.json({ message: error.message || "Internal server error" }, { status: 500 });
   }
 }
