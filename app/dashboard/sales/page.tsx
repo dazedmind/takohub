@@ -159,7 +159,9 @@ export default function SalesPage() {
                     <th className="py-3 px-4 font-bold">Seller</th>
                     <th className="py-3 px-4 font-bold text-center">Plates (Ch/Oct/Cr)</th>
                     <th className="py-3 px-4 font-bold text-center">Total Plates</th>
-                    <th className="py-3 px-4 font-bold text-right">Total Sales</th>
+                    <th className="py-3 px-4 font-bold text-right">Total Sales (Gross)</th>
+                    {/* <th className="py-3 px-4 font-bold text-right">Gross</th> */}
+                    <th className="py-3 px-4 font-bold text-right">Net</th>
                     <th className="py-3 px-4 font-bold text-right">Salary</th>
                     <th className="py-3 px-4 font-bold text-right">Cash / GCash</th>
                     <th className="py-3 px-4 font-bold text-center">Short / Over</th>
@@ -193,6 +195,12 @@ export default function SalesPage() {
                         </td>
                         <td className="py-3 px-4 text-right font-bold text-zinc-900 dark:text-zinc-100">
                           {formatPeso(s.totalSales)}
+                        </td>
+                        {/* <td className="py-3 px-4 text-right font-bold text-zinc-900 dark:text-zinc-100 font-mono">
+                          {formatPeso(s.grossSales ?? s.totalSales)}
+                        </td> */}
+                        <td className="py-3 px-4 text-right font-bold text-zinc-900 dark:text-zinc-100 font-mono">
+                          {formatPeso(s.netSales ?? (s.totalSales - s.expenses - (s.free || 0) - (s.shortOver || 0) - (Number(s.trashLeftover) || 0)))}
                         </td>
                         <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100">
                           {formatPeso(s.salary)}

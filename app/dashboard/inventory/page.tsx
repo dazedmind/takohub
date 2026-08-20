@@ -12,8 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Pen, Plus } from "lucide-react";
-import { toast } from "sonner";
+import { Minus, Pen, Plus } from "lucide-react";
+import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import { useSessionContext } from "@/components/providers/session-provider";
 import { CameraModal } from "@/components/camera-modal";
 import {
@@ -28,6 +28,7 @@ import type { SessionUser } from "@/lib/types";
 
 export default function InventoryPage() {
   const { user } = useSessionContext();
+  const dialog = useGlobalDialog();
   const [selectedBranchId, setSelectedBranchId] = useState<number | "">("");
   const [activeTab, setActiveTab] = useState<"CENTRAL" | "BRANCH" | "MOVEMENTS">(
     "BRANCH"
@@ -46,17 +47,19 @@ export default function InventoryPage() {
   const [adjustItemId, setAdjustItemId] = useState<number | "">("");
   const [adjustBranchId, setAdjustBranchId] = useState<number | null>(null);
   const [adjustQty, setAdjustQty] = useState<string>("-1");
+  const [adjustTargetQty, setAdjustTargetQty] = useState<number>(0);
+  const [lastInitializedId, setLastInitializedId] = useState<string>("");
   const [adjustReason, setAdjustReason] = useState<string>("");
+
+  const isBS = user?.role === "BS";
+  const isIM = user?.role === "IM";
+  const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
     if (user && user.role !== "BS") {
       setActiveTab("CENTRAL");
     }
   }, [user]);
-
-  const isBS = user?.role === "BS";
-  const isIM = user?.role === "IM";
-  const isAdmin = user?.role === "ADMIN";
 
   // TanStack Queries
   const { data: branchesData } = useBranchesQuery();
@@ -81,6 +84,26 @@ export default function InventoryPage() {
   const branchItems = branchData?.branchItems || [];
   const bsHasActiveShift = branchData?.hasActiveShift;
   const bsBranchName = branchData?.branchName || "";
+  const branchItemStock = branchItems.find((i) => i.itemId === adjustItemId)?.currentStock || 0;
+
+  useEffect(() => {
+    if (adjustModalOpen && adjustItemId) {
+      const key = `${adjustBranchId}_${adjustItemId}`;
+      if (lastInitializedId !== key) {
+        const currentStock = (adjustBranchId 
+          ? branchItems.find((i) => i.itemId === adjustItemId)?.currentStock 
+          : items.find((i) => i.itemId === adjustItemId)?.centralStock) || 0;
+        setAdjustTargetQty(currentStock);
+        
+        const hasItems = adjustBranchId ? branchItems.length > 0 : items.length > 0;
+        if (hasItems) {
+          setLastInitializedId(key);
+        }
+      }
+    } else if (!adjustModalOpen && lastInitializedId !== "") {
+      setLastInitializedId("");
+    }
+  }, [adjustItemId, adjustBranchId, adjustModalOpen, items, branchItems, lastInitializedId]);
 
   const { data: movementsData, isLoading: isMovementsLoading } = useMovementsQuery(
     !isBS && activeTab === "MOVEMENTS"
@@ -94,7 +117,7 @@ export default function InventoryPage() {
   const handleReceiveStock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!receiveItemId || Number(receiveQty) <= 0) {
-      toast.error("Please enter a valid item and quantity");
+      dialog.show({ title: "Verification Required", message: "Please enter a valid item and quantity", type: "error" });
       return;
     }
 
@@ -104,22 +127,27 @@ export default function InventoryPage() {
         quantity: Number(receiveQty),
         reason: receiveReason.trim(),
       });
-      toast.success(`Received ${receiveQty} units into Central Inventory`);
+      dialog.show({ title: "Success", message: `Received ${receiveQty} units into Central Inventory`, type: "success" });
       setReceiveModalOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to receive stock");
+      dialog.show({ title: "Error", message: err instanceof Error ? err.message : "Failed to receive stock", type: "error" });
     }
   };
 
   const handleAdjustStock = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adjustItemId || Number(adjustQty) === 0) {
-      toast.error("Please enter a valid non-zero adjustment quantity");
+    const originalStock = (adjustBranchId 
+      ? branchItems.find((i) => i.itemId === adjustItemId)?.currentStock 
+      : items.find((i) => i.itemId === adjustItemId)?.centralStock) || 0;
+    const diff = adjustTargetQty - originalStock;
+
+    if (!adjustItemId || diff === 0) {
+      dialog.show({ title: "Verification Required", message: "Please enter a valid non-zero adjustment quantity", type: "error" });
       return;
     }
 
     if (!adjustReason.trim()) {
-      toast.error("Please provide a reason for the adjustment");
+      dialog.show({ title: "Verification Required", message: "Please provide a reason for the adjustment", type: "error" });
       return;
     }
 
@@ -127,13 +155,13 @@ export default function InventoryPage() {
       await adjustMutation.mutateAsync({
         itemId: Number(adjustItemId),
         branchId: adjustBranchId,
-        adjustmentQuantity: Number(adjustQty),
+        adjustmentQuantity: diff,
         reason: adjustReason.trim(),
       });
-      toast.success("Stock adjustment applied successfully!");
+      dialog.show({ title: "Success", message: "Stock adjustment applied successfully!", type: "success" });
       setAdjustModalOpen(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to adjust stock");
+      dialog.show({ title: "Error", message: err instanceof Error ? err.message : "Failed to adjust stock", type: "error" });
     }
   };
 
@@ -629,15 +657,31 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="text-xs text-zinc-500 block mb-1">Adjustment Quantity (+ / -)</label>
-                <Input
-                  type="number"
-                  value={adjustQty}
-                  onChange={(e) => setAdjustQty(e.target.value)}
-                  required
-                  placeholder="e.g. -2 or 5"
-                  className="h-9 text-sm font-mono"
-                />
+                <label className="text-xs text-zinc-500 block mb-1">Adjust Quantity (Target Stock)</label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={(e) => { e.preventDefault(); setAdjustTargetQty((prev) => Math.max(0, prev - 1)); }}
+                    className="h-9 w-9 p-0 flex items-center justify-center"
+                  >
+                    <Minus size={14} strokeWidth={4} />
+                  </Button>
+                  <Input
+                    value={adjustTargetQty}
+                    onChange={(e) => setAdjustTargetQty(Math.max(0, Number(e.target.value)))}
+                    required
+                    className="h-9 text-sm text-center font-mono flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={(e) => { e.preventDefault(); setAdjustTargetQty((prev) => prev + 1); }}
+                    className="h-9 w-9 p-0 flex items-center justify-center"
+                  >
+                    <Plus size={14} strokeWidth={4} />
+                  </Button>
+                </div>
               </div>
 
               <div>

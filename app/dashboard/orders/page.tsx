@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Eye, Trash2, Lock, RefreshCcw } from "lucide-react";
-import { toast } from "sonner";
+import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import { useSessionContext } from "@/components/providers/session-provider";
 import {
   useOrdersQuery,
@@ -33,6 +33,7 @@ import type {
 
 export default function OrdersPage() {
   const { user } = useSessionContext();
+  const dialog = useGlobalDialog();
   const [activeTab, setActiveTab] = useState<string>("ALL");
 
   // Order Creation State (Branch Seller)
@@ -96,13 +97,13 @@ export default function OrdersPage() {
   // Basket Management
   const handleAddToBasket = () => {
     if (!selectedItemId) {
-      toast.error("Please select an item");
+      dialog.show({ title: "Verification Required", message: "Please select an item", type: "error" });
       return;
     }
 
     const qty = Number(itemQuantity);
     if (!qty || qty <= 0) {
-      toast.error("Please enter a valid quantity greater than 0");
+      dialog.show({ title: "Verification Required", message: "Please enter a valid quantity greater than 0", type: "error" });
       return;
     }
 
@@ -128,7 +129,7 @@ export default function OrdersPage() {
     });
 
     setItemQuantity("1");
-    toast.success(`Added ${itemObj.itemName} (${qty}) to basket`);
+    dialog.show({ title: "Success", message: `Added ${itemObj.itemName} (${qty}) to basket`, type: "success" });
   };
 
   const handleRemoveFromBasket = (itemId: number) => {
@@ -138,12 +139,12 @@ export default function OrdersPage() {
   // Submit Order Mutation
   const handleSubmitOrder = async () => {
     if (!selectedBranchId) {
-      toast.error("Please select your branch");
+      dialog.show({ title: "Verification Required", message: "Please select your branch", type: "error" });
       return;
     }
 
     if (orderBasket.length === 0) {
-      toast.error("Order basket is empty.");
+      dialog.show({ title: "Verification Required", message: "Order basket is empty.", type: "error" });
       return;
     }
 
@@ -155,9 +156,9 @@ export default function OrdersPage() {
       });
       setOrderBasket([]);
       setOrderNotes("");
-      toast.success("Order submitted successfully!");
+      dialog.show({ title: "Success", message: "Order submitted successfully!", type: "success" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error submitting order");
+      dialog.show({ title: "Error", message: err instanceof Error ? err.message : "Error submitting order", type: "error" });
     }
   };
 
@@ -169,13 +170,15 @@ export default function OrdersPage() {
     try {
       await updateStatusMutation.mutateAsync({ orderId, status: nextStatus });
       setSelectedOrder(null);
-      toast.success(
-        nextStatus === "FULFILLED"
+      dialog.show({
+        title: "Success",
+        message: nextStatus === "FULFILLED"
           ? "Order fulfilled! Stock transferred to branch."
-          : `Order updated to ${nextStatus}`
-      );
+          : `Order updated to ${nextStatus}`,
+        type: "success"
+      });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to update order status");
+      dialog.show({ title: "Error", message: err instanceof Error ? err.message : "Failed to update order status", type: "error" });
     }
   };
 

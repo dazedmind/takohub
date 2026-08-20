@@ -1,6 +1,6 @@
 import { db } from "../../../../lib/db";
 import { and, eq } from "drizzle-orm";
-import { sessionLog, sales, branchInventory, inventoryUsageLog, inventoryItems } from "../../../db/schema";
+import { sessionLog, sales, branchInventory, inventoryUsageLog, inventoryItems, salesRemarks } from "../../../db/schema";
 import { requireAuth } from "../../../../lib/auth-utils";
 import { calculateTotalPlates, calculateTotalSales, calculateSalary, calculateShortOver } from "../../../../lib/business-logic";
 
@@ -34,13 +34,17 @@ export async function POST(request: Request) {
       const expenses = parseInt(body.expenses || 0, 10);
       const gcashPayment = parseInt(body.gcashPayment || 0, 10);
       const free = parseInt(body.free || 0, 10);
-      const trashLeftover = body.trashLeftover || "";
+      const trashLeftover = parseInt(body.trashLeftover || 0, 10);
+      const remarksText = body.remarks || "";
 
       // Perform business logic calculations
       const totalPlates = calculateTotalPlates(cheese, octobits, crab);
       const totalSales = calculateTotalSales(totalPlates);
       const salary = calculateSalary(totalPlates);
       const shortOver = parseInt(body.shortOver || 0, 10);
+
+      const grossSales = totalSales;
+      const netSales = grossSales - expenses - free - shortOver - trashLeftover;
 
       // Create Sales Record
       const [salesRecord] = await db
@@ -61,9 +65,20 @@ export async function POST(request: Request) {
           free,
           shortOver,
           trashLeftover,
+          grossSales,
+          netSales,
           date: endTime,
         })
         .returning();
+
+      // If remarks are provided, store in the remarks table
+      if (remarksText.trim()) {
+        await db.insert(salesRemarks).values({
+          sessionId: activeShift.sessionId,
+          userId: session.id,
+          remarks: remarksText.trim(),
+        });
+      }
 
       // Automatically deduct branch inventory for Paper Plates (itemId 9) and Toothpicks (itemId 10)
       // Paper Plates: 1 pc per plate sold (including free plates)

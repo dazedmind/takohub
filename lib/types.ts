@@ -125,6 +125,8 @@ export interface InventoryStats {
 // Dashboard statistics
 export interface AdminDashboardStats {
   dailyRevenue: number;
+  dailyGross?: number;
+  dailyNet?: number;
   weeklyRevenue: number;
   totalPlatesToday: number;
   totalInventory: number;

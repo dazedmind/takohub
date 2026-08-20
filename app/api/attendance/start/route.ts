@@ -23,6 +23,16 @@ export async function POST(request: Request) {
       return Response.json({ message: "You already have an active shift" }, { status: 400 });
     }
 
+    // Check if there is already an active shift for this branch
+    const branchExisting = await db
+      .select()
+      .from(sessionLog)
+      .where(and(eq(sessionLog.branchId, parseInt(branchId, 10)), eq(sessionLog.shiftStatus, "ACTIVE")));
+
+    if (branchExisting.length > 0) {
+      return Response.json({ message: "This branch location already has an active shift started by another employee." }, { status: 400 });
+    }
+
     const [newShift] = await db
       .insert(sessionLog)
       .values({

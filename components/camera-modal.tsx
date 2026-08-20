@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, X, RotateCcw } from "lucide-react";
-import { toast } from "sonner";
+import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import type { Branch } from "@/lib/types";
 
 interface CameraModalProps {
@@ -21,6 +21,7 @@ export function CameraModal({
 }: CameraModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const dialog = useGlobalDialog();
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [branches, setBranches] = useState<Branch[]>(initialBranches);
@@ -49,7 +50,12 @@ export function CameraModal({
           if (list.length > 0) {
             setBranches(list);
             if (!selectedBranchId) {
-              setSelectedBranchId(list[0].branchId);
+              const availableBranch = list.find((b: any) => !b.hasActiveShift);
+              if (availableBranch) {
+                setSelectedBranchId(availableBranch.branchId);
+              } else {
+                setSelectedBranchId(list[0].branchId);
+              }
             }
           }
         })
@@ -133,12 +139,12 @@ export function CameraModal({
 
   const handleSubmitShift = async () => {
     if (!selectedBranchId) {
-      toast.error("Please select the branch where you are working today");
+      dialog.show({ title: "Verification Required", message: "Please select the branch where you are working today", type: "error" });
       return;
     }
 
     if (!capturedImage) {
-      toast.error("Please capture your attendance selfie photo");
+      dialog.show({ title: "Verification Required", message: "Please capture your attendance selfie photo", type: "error" });
       return;
     }
 
@@ -158,11 +164,21 @@ export function CameraModal({
         throw new Error(data.error || "Failed to start shift");
       }
 
-      toast.success("Shift started successfully!");
-      handleClose();
-      onSuccess();
+      dialog.show({
+        title: "Success",
+        message: "Shift started successfully!",
+        type: "success",
+        onConfirm: () => {
+          handleClose();
+          onSuccess();
+        }
+      });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Error starting shift");
+      dialog.show({
+        title: "Error",
+        message: err instanceof Error ? err.message : "Error starting shift",
+        type: "error"
+      });
     } finally {
       setIsStartingShift(false);
     }
@@ -210,9 +226,14 @@ export function CameraModal({
             disabled={isStartingShift}
           >
             <option value="">-- Choose Branch Location --</option>
-            {branches.map((b) => (
-              <option key={b.branchId} value={b.branchId} className="text-zinc-900 bg-white">
-                {b.branchName}
+            {branches.map((b: any) => (
+              <option 
+                key={b.branchId} 
+                value={b.branchId} 
+                className="text-zinc-900 bg-white"
+                disabled={b.hasActiveShift}
+              >
+                {b.branchName} {b.hasActiveShift ? "(Active Shift Started)" : ""}
               </option>
             ))}
           </select>

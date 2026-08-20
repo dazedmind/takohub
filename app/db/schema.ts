@@ -92,7 +92,22 @@ export const sales = pgTable("sales", {
   gcashPayment: integer("gcash_payment").default(0).notNull(),
   free: integer("free").default(0).notNull(),
   shortOver: integer("short_over").notNull(),
-  trashLeftover: text("trash_leftover"),
+  trashLeftover: integer("trash_leftover").default(0).notNull(),
+  grossSales: integer("gross_sales").default(0).notNull(),
+  netSales: integer("net_sales").default(0).notNull(),
+});
+
+// Sales Remarks
+export const salesRemarks = pgTable("sales_remarks", {
+  remarkId: serial("remark_id").primaryKey(),
+  sessionId: integer("session_id")
+    .references(() => sessionLog.sessionId, { onDelete: "cascade" })
+    .notNull(),
+  userId: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" })
+    .notNull(),
+  remarks: text("remarks").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Branch Orders

@@ -198,18 +198,30 @@ export default function DashboardHome() {
       {isAdmin && (
         <div className="space-y-6">
           {/* Key Metrics Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
               <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">Today&apos;s Revenue</CardTitle>
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">Today&apos;s Gross</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
-                  {formatPeso(stats?.dailyRevenue ?? 0)}
+                  {formatPeso(stats?.dailyGross ?? stats?.dailyRevenue ?? 0)}
                 </div>
                 <p className="text-xs text-zinc-500 mt-1 font-medium">
                   {stats?.totalPlatesToday ?? 0} plates sold
                 </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+              <CardHeader className="pb-1 pt-4 px-4">
+                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">Today&apos;s Net</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+                  {formatPeso(stats?.dailyNet ?? stats?.dailyRevenue ?? 0)}
+                </div>
+                <p className="text-xs text-zinc-500 mt-1 font-medium">After EOD deductions</p>
               </CardContent>
             </Card>
 

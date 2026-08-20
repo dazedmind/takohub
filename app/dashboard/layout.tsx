@@ -2,7 +2,6 @@
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
-import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider, useSessionContext } from "@/components/providers/session-provider";
 
 export default function DashboardLayout({
@@ -64,7 +63,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-      <Toaster position="top-center" />
     </SidebarProvider>
   );
 }

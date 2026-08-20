@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import {
   calculatePlatesSold,
   calculateTotalSales,
@@ -35,6 +35,8 @@ export function SalesLogModal({
   userRole,
 }: SalesLogModalProps) {
   const isIM = userRole === "IM" || activeShift?.role === "IM";
+  const isBS = userRole === "BS" || activeShift?.role === "BS";
+  const dialog = useGlobalDialog();
 
   // Branch Seller Sales Fields
   const [cheese, setCheese] = useState<string>("0");
@@ -44,8 +46,14 @@ export function SalesLogModal({
   const [expenses, setExpenses] = useState<string>("0");
   const [gcashPayment, setGcashPayment] = useState<string>("0");
   const [free, setFree] = useState<string>("0");
-  const [shortOver, setShortOver] = useState<string>("0");
-  const [trashLeftover, setTrashLeftover] = useState<string>("");
+  const [shortVal, setShortVal] = useState<string>("0");
+  const [overVal, setOverVal] = useState<string>("0");
+  const [trashLeftover, setTrashLeftover] = useState<string>("0");
+  const [remarks, setRemarks] = useState<string>("");
+
+  const shortOver = useMemo(() => {
+    return String((Number(shortVal) || 0) - (Number(overVal) || 0));
+  }, [shortVal, overVal]);
 
   // Inventory Manager EOD Report Field
   const [eodReport, setEodReport] = useState<string>("");
@@ -68,6 +76,10 @@ export function SalesLogModal({
     return calculateSalary(totalPlatesSold);
   }, [totalPlatesSold]);
 
+  const tallyDiffers = useMemo(() => {
+    return (Number(cashOnhand) || 0) + (Number(gcashPayment) || 0) !== totalSales;
+  }, [cashOnhand, gcashPayment, totalSales]);
+
   const isValid = useMemo(() => {
     if (isIM) {
       return true; // EOD report is optional or notes only
@@ -80,19 +92,32 @@ export function SalesLogModal({
       Number(expenses) >= 0 &&
       Number(gcashPayment) >= 0 &&
       Number(free) >= 0 &&
-      !isNaN(Number(shortOver))
+      Number(trashLeftover) >= 0 &&
+      Number(shortVal) >= 0 &&
+      Number(overVal) >= 0 &&
+      !tallyDiffers
     );
-  }, [isIM, cheese, octobits, crab, cashOnhand, expenses, gcashPayment, free, shortOver]);
+  }, [isIM, cheese, octobits, crab, cashOnhand, expenses, gcashPayment, free, trashLeftover, shortVal, overVal, tallyDiffers]);
 
   const handleEndShift = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeShift) {
-      toast.error("No active shift found");
+      dialog.show({ title: "Error", message: "No active shift found", type: "error" });
+      return;
+    }
+
+    if (isIM && eodReport.trim() === "") {
+      dialog.show({ title: "Verification Required", message: "Please provide an EOD report or notes", type: "error" });
+      return;
+    }
+
+    if (isBS && totalPlatesSold === 0 && totalSales === 0) {
+      dialog.show({ title: "Verification Required", message: "Please log at least one plate sold or sales amount", type: "error" });
       return;
     }
 
     if (!isValid) {
-      toast.error("Please complete all required fields properly");
+      dialog.show({ title: "Verification Required", message: "Please complete all required fields properly and ensure Cash and GCash match the Sales Revenue.", type: "error" });
       return;
     }
 
@@ -121,7 +146,8 @@ export function SalesLogModal({
             gcashPayment: Number(gcashPayment) || 0,
             free: Number(free) || 0,
             shortOver: Number(shortOver) || 0,
-            trashLeftover: trashLeftover.trim(),
+            trashLeftover: Number(trashLeftover) || 0,
+            remarks: remarks.trim(),
           };
 
       const response = await fetch("/api/attendance/end", {
@@ -135,17 +161,21 @@ export function SalesLogModal({
         throw new Error(data.error || "Failed to end shift");
       }
 
-      toast.success(
-        isIM
-          ? "Shift ended with EOD Report."
-          : "Shift ended with Sales Log."
-      );
-      onClose();
-      onSuccess();
+      dialog.show({
+        title: "Success",
+        message: isIM ? "Shift ended with EOD Report." : "Shift ended with Sales Log.",
+        type: "success",
+        onConfirm: () => {
+          onClose();
+          onSuccess();
+        }
+      });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Error ending shift"
-      );
+      dialog.show({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Error ending shift",
+        type: "error"
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -281,84 +311,142 @@ export function SalesLogModal({
                   </h3>
 
                   <div className="grid grid-cols-1 gap-3">
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 items-center">
                       <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
-                        Cash on Hand (₱)
+                        Cash on Hand
                       </label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={cashOnhand}
-                        onChange={(e) => setCashOnhand(e.target.value)}
-                        required
-                        className="w-1/3 h-10 text-sm font-semibold"
-                      />
+                      <div className="relative w-1/3">
+                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={cashOnhand}
+                          onChange={(e) => setCashOnhand(e.target.value)}
+                          required
+                          className="pl-7 h-10 text-sm font-semibold w-full"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 items-center">
                       <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
-                        Expenses (₱)
+                        Expenses
                       </label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={expenses}
-                        onChange={(e) => setExpenses(e.target.value)}
-                        className="w-1/3 h-10 text-sm font-semibold"
-                      />
+                      <div className="relative w-1/3">
+                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={expenses}
+                          onChange={(e) => setExpenses(e.target.value)}
+                          className="pl-7 h-10 text-sm font-semibold w-full"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 items-center">
                       <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
-                        GCash Payments (₱)
+                        GCash Payments
                       </label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={gcashPayment}
-                        onChange={(e) => setGcashPayment(e.target.value)}
-                        className="w-1/3 h-10 text-sm font-semibold"
-                      />
+                      <div className="relative w-1/3">
+                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={gcashPayment}
+                          onChange={(e) => setGcashPayment(e.target.value)}
+                          className="pl-7 h-10 text-sm font-semibold w-full"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 items-center">
                       <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
-                        Free B-Box (pcs)
+                        Free B-Box
                       </label>
-                      <Input
-                        type="number"
-                        min={0}
-                        value={free}
-                        onChange={(e) => setFree(e.target.value)}
-                        className="w-1/3 h-10 text-sm font-semibold"
-                      />
+                      <div className="relative w-1/3">
+                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={free}
+                          onChange={(e) => setFree(e.target.value)}
+                          className="pl-7 h-10 text-sm font-semibold w-full"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex gap-3">
-                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
-                        Short / Over (₱)
-                      </label>
-                      <Input
-                        type="number"
-                        value={shortOver}
-                        onChange={(e) => setShortOver(e.target.value)}
-                        placeholder="e.g. -100 or 100"
-                        className="w-1/3 h-10 text-sm font-mono font-semibold"
-                      />
+                    <div className="flex gap-3 items-center">
+                      <div className="w-full flex items-center justify-between">
+                        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                          Short
+                        </label>
+                        <span className="text-red-500 font-black text-xl mr-2">-</span>
+                      </div>
+                      <div className="relative w-1/3">
+                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={shortVal}
+                          onChange={(e) => setShortVal(e.target.value)}
+                          className="pl-7 h-10 text-sm font-semibold w-full font-mono text-red-600"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                    <div className="flex gap-3 items-center">
+                      <div className="w-full flex items-center justify-between">
+                        <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                          Over
+                        </label>
+                        <span className="text-emerald-500 font-black text-xl mr-2">+</span>
+                      </div>
+                      <div className="relative w-1/3">
+                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={overVal}
+                          onChange={(e) => setOverVal(e.target.value)}
+                          className="pl-7 h-10 text-sm font-semibold w-full font-mono text-emerald-600"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 items-center">
+                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
                         Trash / Left Over
                       </label>
-                      <Input
-                        type="text"
-                        value={trashLeftover}
-                        onChange={(e) => setTrashLeftover(e.target.value)}
-                        placeholder="Notes"
-                        className="h-10 text-sm"
+                      <div className="relative w-1/3">
+                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={trashLeftover}
+                          onChange={(e) => setTrashLeftover(e.target.value)}
+                          className="pl-7 h-10 text-sm font-semibold w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 pt-2">
+                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block">
+                        Remarks
+                      </label>
+                      <textarea
+                        value={remarks}
+                        onChange={(e) => setRemarks(e.target.value)}
+                        placeholder="Additional remarks or notes..."
+                        className="h-20 text-sm w-full border border-zinc-200 dark:border-zinc-800 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-ring bg-white dark:bg-zinc-900"
                       />
                     </div>
+
+                    {tallyDiffers && (
+                      <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-lg text-xs text-amber-700 dark:text-amber-400 font-medium">
+                        The sum of Cash on Hand ({formatPeso(Number(cashOnhand) || 0)}) and GCash Payments ({formatPeso(Number(gcashPayment) || 0)}) is {formatPeso((Number(cashOnhand) || 0) + (Number(gcashPayment) || 0))}, which does not match the Sales Revenue of {formatPeso(totalSales)}.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

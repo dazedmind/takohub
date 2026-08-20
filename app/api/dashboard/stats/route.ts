@@ -19,11 +19,15 @@ export async function GET(request: Request) {
     const dailyStatsResult = await db
       .select({
         revenue: sql<number>`COALESCE(sum(${sales.totalSales}), 0)`,
+        gross: sql<number>`COALESCE(sum(${sales.grossSales}), 0)`,
+        net: sql<number>`COALESCE(sum(${sales.netSales}), 0)`,
         plates: sql<number>`COALESCE(sum(${sales.totalPlates}), 0)`
       })
       .from(sales)
       .where(gte(sales.date, todayStart));
     const dailyRevenue = Number(dailyStatsResult[0]?.revenue || 0);
+    const dailyGross = Number(dailyStatsResult[0]?.gross || 0);
+    const dailyNet = Number(dailyStatsResult[0]?.net || 0);
     const totalPlatesToday = Number(dailyStatsResult[0]?.plates || 0);
 
     // 2. Weekly Revenue
@@ -133,6 +137,8 @@ export async function GET(request: Request) {
 
     return Response.json({
       dailyRevenue,
+      dailyGross,
+      dailyNet,
       weeklyRevenue,
       totalPlatesToday,
       totalInventory,

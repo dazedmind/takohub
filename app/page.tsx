@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { toast, Toaster } from "sonner";
 
 export default function Home() {
   const router = useRouter();

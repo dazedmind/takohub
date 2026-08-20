@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast, Toaster } from "sonner";
+import { useGlobalDialog } from "@/components/providers/dialog-provider";
 
 export default function LoginPage() {
+  const dialog = useGlobalDialog();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -35,7 +36,7 @@ export default function LoginPage() {
 
       if (!response.ok) {
         const msg = data.message || "Invalid username or password.";
-        toast.error(msg);
+        dialog.show({ title: "Error", message: msg, type: "error" });
         setError(msg);
         setIsLoading(false);
         return;
@@ -121,7 +122,6 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
-      <Toaster position="top-center" richColors />
     </main>
   );
 }

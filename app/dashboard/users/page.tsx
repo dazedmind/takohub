@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Pen, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import {
   useUsersQuery,
   useCreateUserMutation,
@@ -38,6 +38,7 @@ const EMPTY_FORM: CreateUserInput = {
 export default function UsersPage() {
   const { data, isLoading } = useUsersQuery();
   const users = data?.users || [];
+  const dialog = useGlobalDialog();
 
   const createMutation = useCreateUserMutation();
   const updateMutation = useUpdateUserMutation();
@@ -68,11 +69,11 @@ export default function UsersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim()) {
-      toast.error("Name and username are required");
+      dialog.show({ title: "Verification Required", message: "Name and username are required", type: "error" });
       return;
     }
     if (!editingUser && !form.password) {
-      toast.error("Password is required for new accounts");
+      dialog.show({ title: "Verification Required", message: "Password is required for new accounts", type: "error" });
       return;
     }
 
@@ -89,18 +90,18 @@ export default function UsersPage() {
             ...(form.password && { password: form.password }),
           },
         });
-        toast.success("User updated");
+        dialog.show({ title: "Success", message: "User updated", type: "success" });
       } else {
         await createMutation.mutateAsync({
           ...form,
           name: form.name.trim(),
           email,
         });
-        toast.success("User created");
+        dialog.show({ title: "Success", message: "User created", type: "success" });
       }
       setDialogOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Save failed");
+      dialog.show({ title: "Error", message: error instanceof Error ? error.message : "Save failed", type: "error" });
     }
   };
 
@@ -109,9 +110,9 @@ export default function UsersPage() {
 
     try {
       await deleteMutation.mutateAsync(user.id);
-      toast.success("User deleted");
+      dialog.show({ title: "Success", message: "User deleted", type: "success" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Delete failed");
+      dialog.show({ title: "Error", message: error instanceof Error ? error.message : "Delete failed", type: "error" });
     }
   };
 

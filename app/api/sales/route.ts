@@ -58,6 +58,8 @@ export async function GET(request: Request) {
         free: sales.free,
         shortOver: sales.shortOver,
         trashLeftover: sales.trashLeftover,
+        grossSales: sales.grossSales,
+        netSales: sales.netSales,
         durationMinutes: sessionLog.durationMinutes,
       })
       .from(sales)

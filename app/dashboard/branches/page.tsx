@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Pen, Plus, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import {
   useBranchesQuery,
   useCreateBranchMutation,
@@ -29,6 +29,7 @@ const EMPTY_FORM: CreateBranchInput = {
 export default function BranchesPage() {
   const { data, isLoading } = useBranchesQuery();
   const branches = data?.branches || [];
+  const dialog = useGlobalDialog();
 
   const createMutation = useCreateBranchMutation();
   const updateMutation = useUpdateBranchMutation();
@@ -56,7 +57,7 @@ export default function BranchesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.branchName.trim()) {
-      toast.error("Branch name is required");
+      dialog.show({ title: "Verification Required", message: "Branch name is required", type: "error" });
       return;
     }
 
@@ -66,14 +67,14 @@ export default function BranchesPage() {
           branchId: editingBranch.branchId,
           data: form,
         });
-        toast.success("Branch updated");
+        dialog.show({ title: "Success", message: "Branch updated", type: "success" });
       } else {
         await createMutation.mutateAsync(form);
-        toast.success("Branch created");
+        dialog.show({ title: "Success", message: "Branch created", type: "success" });
       }
       setDialogOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Save failed");
+      dialog.show({ title: "Error", message: error instanceof Error ? error.message : "Save failed", type: "error" });
     }
   };
 
@@ -82,9 +83,9 @@ export default function BranchesPage() {
 
     try {
       await deleteMutation.mutateAsync(branch.branchId);
-      toast.success("Branch deleted");
+      dialog.show({ title: "Success", message: "Branch deleted", type: "success" });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Delete failed");
+      dialog.show({ title: "Error", message: error instanceof Error ? error.message : "Delete failed", type: "error" });
     }
   };
 

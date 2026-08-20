@@ -1,13 +1,26 @@
 import { db } from "../../../lib/db";
-import { branches, branchInventory, inventoryItems } from "../../db/schema";
+import { eq } from "drizzle-orm";
+import { branches, branchInventory, inventoryItems, sessionLog } from "../../db/schema";
 import { requireRole } from "../../../lib/auth-utils";
 
 export async function GET(request: Request) {
   try {
     // Anyone who is authenticated can see branches
     await requireRole(request, "ADMIN", "BS", "IM");
+    
+    const activeShiftsResult = await db
+      .select({ branchId: sessionLog.branchId })
+      .from(sessionLog)
+      .where(eq(sessionLog.shiftStatus, "ACTIVE"));
+    const activeBranchIds = new Set(activeShiftsResult.map(s => s.branchId));
+
     const allBranches = await db.select().from(branches);
-    return Response.json(allBranches);
+    const result = allBranches.map(b => ({
+      ...b,
+      hasActiveShift: activeBranchIds.has(b.branchId)
+    }));
+
+    return Response.json(result);
   } catch (error: any) {
     return Response.json({ message: error.message || "Unauthorized" }, { status: error.message === "Unauthorized" ? 401 : 403 });
   }
