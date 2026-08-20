@@ -214,7 +214,12 @@ export function useOrdersQuery() {
       const res = await fetch("/api/orders");
       if (!res.ok) throw new Error("Failed to load orders");
       const data = await res.json();
-      return Array.isArray(data) ? { orders: data } : data;
+      const rawOrders = Array.isArray(data) ? data : (data.orders || []);
+      const mappedOrders = rawOrders.map((ord: any) => ({
+        ...ord,
+        items: ord.items || ord.orderList || [],
+      }));
+      return { orders: mappedOrders };
     },
   });
 }

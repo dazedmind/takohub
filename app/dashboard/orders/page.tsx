@@ -487,7 +487,7 @@ export default function OrdersPage() {
 
       {/* Order Details & Status Workflow Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Order #{selectedOrder ? formatOrderIdDisplay(selectedOrder.orderId, selectedOrder.createdOn) : ""}</DialogTitle>
             <DialogDescription className="text-sm">
@@ -622,7 +622,7 @@ export default function OrdersPage() {
                             disabled={updateStatusMutation.isPending}
                             className="flex-1 h-9 text-sm font-bold"
                           >
-                            Fulfill & Transfer Stock
+                            Mark as Fulfilled
                           </Button>
                           {(user?.role === "ADMIN" || selectedOrder.orderedBy === user?.id) && (
                             <Button
