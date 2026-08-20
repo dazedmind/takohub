@@ -1,24 +1,41 @@
 import { db } from "../../../../lib/db";
-import { eq } from "drizzle-orm";
-import { branchInventory, inventoryItems } from "../../../db/schema";
+import { eq, and } from "drizzle-orm";
+import { branchInventory, inventoryItems, sessionLog, branches } from "../../../db/schema";
 import { requireRole } from "../../../../lib/auth-utils";
 
 export async function GET(request: Request) {
   try {
-    await requireRole(request, "ADMIN", "IM", "BS");
+    const session = await requireRole(request, "ADMIN", "IM", "BS");
     
     // Parse URL params
     const { searchParams } = new URL(request.url);
     const branchIdStr = searchParams.get("branchId");
 
+    const activeShifts = await db
+      .select()
+      .from(sessionLog)
+      .where(and(eq(sessionLog.userId, session.id), eq(sessionLog.shiftStatus, "ACTIVE")));
+    
+    const hasActiveShift = activeShifts.length > 0;
+
+    let branchId: number;
     if (!branchIdStr) {
-      return Response.json({ message: "branchId parameter is required" }, { status: 400 });
+      if (!hasActiveShift) {
+        return Response.json({ hasActiveShift: false, branchItems: [] });
+      }
+      branchId = activeShifts[0].branchId;
+    } else {
+      branchId = parseInt(branchIdStr, 10);
+      if (isNaN(branchId)) {
+        return Response.json({ message: "Invalid branchId" }, { status: 400 });
+      }
     }
 
-    const branchId = parseInt(branchIdStr, 10);
-    if (isNaN(branchId)) {
-      return Response.json({ message: "Invalid branchId" }, { status: 400 });
-    }
+    const branchInfo = await db
+      .select({ branchName: branches.branchName })
+      .from(branches)
+      .where(eq(branches.branchId, branchId));
+    const branchName = branchInfo[0]?.branchName || "";
 
     // Retrieve inventories joined with inventory item names/units
     const records = await db
@@ -37,7 +54,12 @@ export async function GET(request: Request) {
       .where(eq(branchInventory.branchId, branchId))
       .orderBy(inventoryItems.itemId);
 
-    return Response.json(records);
+    return Response.json({
+      hasActiveShift: branchIdStr ? true : hasActiveShift,
+      branchId,
+      branchName,
+      branchItems: records,
+    });
   } catch (error: any) {
     return Response.json({ message: error.message || "Unauthorized" }, { status: 401 });
   }

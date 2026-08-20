@@ -128,43 +128,7 @@ export function useBranchInventoryQuery(branchId?: number | "", enabled = true) 
         return { hasActiveShift: false, branchItems: [] };
       }
       if (!res.ok) throw new Error(data.error || "Failed to load branch inventory");
-      
-      const result = Array.isArray(data) ? { branchItems: data } : data;
-      
-      if (result.branchName === undefined && branchId) {
-        try {
-          const bRes = await fetch("/api/branches");
-          if (bRes.ok) {
-            const bData = await bRes.json();
-            const branchesList = Array.isArray(bData) ? bData : (bData.branches || []);
-            const currentBranch = branchesList.find((b: any) => b.branchId === Number(branchId));
-            if (currentBranch) {
-              result.branchName = currentBranch.branchName;
-            }
-          }
-        } catch {}
-      }
-
-      if (result.hasActiveShift === undefined) {
-        try {
-          const sRes = await fetch("/api/attendance/active");
-          if (sRes.ok) {
-            const sData = await sRes.json();
-            const activeShift = sData?.activeShift;
-            if (activeShift) {
-              result.hasActiveShift = Number(activeShift.branchId) === Number(branchId);
-            } else {
-              result.hasActiveShift = false;
-            }
-          } else {
-            result.hasActiveShift = false;
-          }
-        } catch {
-          result.hasActiveShift = false;
-        }
-      }
-
-      return result;
+      return data;
     },
     enabled,
     refetchInterval: 10000,
@@ -334,7 +298,8 @@ export function useAttendanceHistoryQuery(filters: {
 
       const res = await fetch(`/api/attendance/history?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to load attendance records");
-      return res.json();
+      const data = await res.json();
+      return Array.isArray(data) ? { records: data } : data;
     },
   });
 }
@@ -371,7 +336,8 @@ export function useDashboardStatsQuery(enabled = true) {
     queryFn: async () => {
       const res = await fetch("/api/dashboard/stats");
       if (!res.ok) throw new Error("Failed to load dashboard stats");
-      return res.json();
+      const data = await res.json();
+      return data.stats ? data : { stats: data };
     },
     enabled,
     refetchInterval: 10000,

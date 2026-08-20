@@ -34,6 +34,8 @@ export default function DashboardHome() {
   const isIM = user?.role === "IM";
   const isBS = user?.role === "BS";
 
+  const [realtimeActiveCount, setRealtimeActiveCount] = useState<number | null>(null);
+
   // TanStack Queries
   const { data: branchesData } = useBranchesQuery();
   const branches = branchesData?.branches || [];
@@ -43,6 +45,48 @@ export default function DashboardHome() {
 
   const { data: statsData, isLoading: isStatsLoading } = useDashboardStatsQuery(isAdmin);
   const stats = statsData?.stats || null;
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    let ws: WebSocket | null = null;
+    let isMounted = true;
+
+    function connect() {
+      if (!isMounted) return;
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(`${protocol}//${window.location.host}/api/ws`);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "active_count") {
+            setRealtimeActiveCount(data.count);
+          }
+        } catch (e) {
+          console.error("WS parse error:", e);
+        }
+      };
+
+      ws.onclose = () => {
+        setTimeout(connect, 4000);
+      };
+
+      ws.onerror = (err) => {
+        console.error("WS error:", err);
+        ws?.close();
+      };
+    }
+
+    connect();
+
+    return () => {
+      isMounted = false;
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [isAdmin]);
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ["attendance"] });
@@ -175,7 +219,7 @@ export default function DashboardHome() {
               </CardHeader>
               <CardContent className="px-4 pb-4">
                 <div className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
-                  {stats?.activeEmployeesCount ?? 0}
+                  {realtimeActiveCount ?? stats?.activeEmployeesCount ?? 0}
                 </div>
                 <p className="text-xs text-zinc-500 mt-1 font-medium">Currently on shift</p>
               </CardContent>

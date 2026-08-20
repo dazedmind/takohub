@@ -322,7 +322,7 @@ export default function InventoryPage() {
                       <thead>
                         <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
                           <th className="py-3 px-4 font-bold">Item</th>
-                          <th className="py-3 px-4 font-bold">Unit</th>
+                          {/* <th className="py-3 px-4 font-bold">Unit</th> */}
                           <th className="py-3 px-4 font-bold text-center">Stock</th>
                           <th className="py-3 px-4 font-bold">Status</th>
                           <th className="py-3 px-4 font-bold text-right">Actions</th>
@@ -337,7 +337,7 @@ export default function InventoryPage() {
                             <td className="py-3 px-4 font-bold text-zinc-900 dark:text-zinc-100">
                               {item.itemName}
                             </td>
-                            <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit || "—"}</td>
+                            {/* <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit || "—"}</td> */}
                             <td className="py-3 px-4 text-center font-bold text-base">{item.centralStock}</td>
                             <td className="py-3 px-4">
                               <Badge
@@ -388,7 +388,7 @@ export default function InventoryPage() {
                       <thead>
                         <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
                           <th className="py-3 px-4 font-bold">Product</th>
-                          <th className="py-3 px-4 font-bold">Unit</th>
+                          {/* <th className="py-3 px-4 font-bold">Unit</th> */}
                           <th className="py-3 px-4 font-bold text-center">Current Quantity</th>
                           <th className="py-3 px-4 font-bold">Status</th>
                           <th className="py-3 px-4 font-bold text-right">Actions</th>
@@ -403,7 +403,7 @@ export default function InventoryPage() {
                             <td className="py-3 px-4 font-bold text-zinc-900 dark:text-zinc-100">
                               {item.itemName}
                             </td>
-                            <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit}</td>
+                            {/* <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit}</td> */}
                             <td className="py-3 px-4 text-center font-bold text-zinc-900 dark:text-zinc-100 text-base">
                               {item.currentStock}
                             </td>
@@ -427,7 +427,6 @@ export default function InventoryPage() {
                                 className="h-8 gap-1.5 text-xs font-semibold"
                               >
                                 <Pen size={14} />
-                                <span>Adjust</span>
                               </Button>
                             </td>
                           </tr>
@@ -621,7 +620,7 @@ export default function InventoryPage() {
                   onChange={(e) => setAdjustItemId(Number(e.target.value))}
                   required
                 >
-                  {items.map((i) => (
+                  {(isBS ? branchItems : items).map((i) => (
                     <option key={i.itemId} value={i.itemId}>
                       {i.itemName} ({i.unit || "pcs"})
                     </option>

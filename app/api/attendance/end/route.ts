@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       const totalPlates = calculateTotalPlates(cheese, octobits, crab);
       const totalSales = calculateTotalSales(totalPlates);
       const salary = calculateSalary(totalPlates);
-      const shortOver = calculateShortOver(cashOnhand, gcashPayment, expenses, salary, totalSales);
+      const shortOver = parseInt(body.shortOver || 0, 10);
 
       // Create Sales Record
       const [salesRecord] = await db
