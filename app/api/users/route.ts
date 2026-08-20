@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await hashPassword(password);
-    const userId = "usr_" + Math.random().toString(36).substring(2, 10);
+    const userId = Math.floor(100000 + Math.random() * 900000).toString();
 
     const [newUser] = await db
       .insert(user)

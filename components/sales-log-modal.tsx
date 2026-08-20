@@ -227,7 +227,7 @@ export function SalesLogModal({
                     Plates Sold
                   </h3>
 
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
                         Cheese (qty)
@@ -238,7 +238,7 @@ export function SalesLogModal({
                         value={cheese}
                         onChange={(e) => setCheese(e.target.value)}
                         required
-                        className="font-bold text-base h-11"
+                        className="font-bold text-base text-center h-11"
                       />
                     </div>
 
@@ -252,7 +252,7 @@ export function SalesLogModal({
                         value={octobits}
                         onChange={(e) => setOctobits(e.target.value)}
                         required
-                        className="font-bold text-base h-11"
+                        className="font-bold text-base text-center h-11"
                       />
                     </div>
 
@@ -266,7 +266,7 @@ export function SalesLogModal({
                         value={crab}
                         onChange={(e) => setCrab(e.target.value)}
                         required
-                        className="font-bold text-base h-11"
+                        className="font-bold text-base text-center h-11"
                       />
                     </div>
                   </div>
@@ -281,8 +281,8 @@ export function SalesLogModal({
                   </h3>
 
                   <div className="grid grid-cols-1 gap-3">
-                    <div>
-                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                    <div className="flex gap-3">
+                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
                         Cash on Hand (₱)
                       </label>
                       <Input
@@ -291,12 +291,12 @@ export function SalesLogModal({
                         value={cashOnhand}
                         onChange={(e) => setCashOnhand(e.target.value)}
                         required
-                        className="h-10 text-sm font-semibold"
+                        className="w-1/3 h-10 text-sm font-semibold"
                       />
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                    <div className="flex gap-3">
+                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
                         Expenses (₱)
                       </label>
                       <Input
@@ -304,12 +304,12 @@ export function SalesLogModal({
                         min={0}
                         value={expenses}
                         onChange={(e) => setExpenses(e.target.value)}
-                        className="h-10 text-sm font-semibold"
+                        className="w-1/3 h-10 text-sm font-semibold"
                       />
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                    <div className="flex gap-3">
+                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
                         GCash Payments (₱)
                       </label>
                       <Input
@@ -317,12 +317,12 @@ export function SalesLogModal({
                         min={0}
                         value={gcashPayment}
                         onChange={(e) => setGcashPayment(e.target.value)}
-                        className="h-10 text-sm font-semibold"
+                        className="w-1/3 h-10 text-sm font-semibold"
                       />
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                    <div className="flex gap-3">
+                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
                         Free B-Box (pcs)
                       </label>
                       <Input
@@ -330,12 +330,12 @@ export function SalesLogModal({
                         min={0}
                         value={free}
                         onChange={(e) => setFree(e.target.value)}
-                        className="h-10 text-sm font-semibold"
+                        className="w-1/3 h-10 text-sm font-semibold"
                       />
                     </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                    <div className="flex gap-3">
+                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
                         Short / Over (₱)
                       </label>
                       <Input
@@ -343,7 +343,7 @@ export function SalesLogModal({
                         value={shortOver}
                         onChange={(e) => setShortOver(e.target.value)}
                         placeholder="e.g. -100 or 100"
-                        className="h-10 text-sm font-mono font-semibold"
+                        className="w-1/3 h-10 text-sm font-mono font-semibold"
                       />
                     </div>
 

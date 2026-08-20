@@ -46,9 +46,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await requireAuth(request);
-    const { branchId, orderList, notes } = await request.json();
+    const { branchId, orderList, items, notes } = await request.json();
+    const targetOrderList = orderList || items;
 
-    if (!branchId || !orderList || !Array.isArray(orderList) || orderList.length === 0) {
+    if (!branchId || !targetOrderList || !Array.isArray(targetOrderList) || targetOrderList.length === 0) {
       return Response.json({ message: "Branch ID and order list are required" }, { status: 400 });
     }
 
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
         branchId: parseInt(branchId, 10),
         orderedBy: session.id,
         status: "PENDING",
-        orderList,
+        orderList: targetOrderList,
         notes: notes || "",
       })
       .returning();

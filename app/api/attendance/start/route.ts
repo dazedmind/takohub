@@ -6,9 +6,10 @@ import { requireAuth } from "../../../../lib/auth-utils";
 export async function POST(request: Request) {
   try {
     const session = await requireAuth(request);
-    const { branchId, selfieUrl } = await request.json();
+    const { branchId, selfieUrl, selfieDataUrl } = await request.json();
+    const targetSelfie = selfieUrl || selfieDataUrl;
 
-    if (!branchId || !selfieUrl) {
+    if (!branchId || !targetSelfie) {
       return Response.json({ message: "Branch ID and selfie photo are required to start a shift" }, { status: 400 });
     }
 
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
         userId: session.id,
         branchId: parseInt(branchId, 10),
         shiftStatus: "ACTIVE",
-        selfieUrl,
+        selfieUrl: targetSelfie,
       })
       .returning();
 

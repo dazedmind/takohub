@@ -227,9 +227,9 @@ async function main() {
     await sql.query(`
       INSERT INTO "user" (id, name, username, password, role)
       VALUES 
-        ('usr_admin', 'Admin Owner', 'admin', $1, 'ADMIN'),
-        ('usr_seller', 'Seller Juan', 'seller', $2, 'BS'),
-        ('usr_manager', 'Manager Maria', 'manager', $3, 'IM')
+        ('1', 'Admin Owner', 'admin', $1, 'ADMIN'),
+        ('2', 'Seller Juan', 'seller', $2, 'BS'),
+        ('3', 'Manager Maria', 'manager', $3, 'IM')
       ON CONFLICT (username) DO NOTHING;
     `, [adminPasswordHash, sellerPasswordHash, managerPasswordHash]);
 

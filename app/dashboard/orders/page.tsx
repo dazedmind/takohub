@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, Trash2, Lock } from "lucide-react";
+import { Eye, Trash2, Lock, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useSessionContext } from "@/components/providers/session-provider";
 import {
@@ -50,7 +50,7 @@ export default function OrdersPage() {
   const isAdmin = user?.role === "ADMIN";
 
   // TanStack Queries
-  const { data: ordersData, isLoading } = useOrdersQuery();
+  const { data: ordersData, refetch, isLoading } = useOrdersQuery();
   const orders = ordersData?.orders || [];
 
   const { data: branchesData } = useBranchesQuery();
@@ -177,6 +177,10 @@ export default function OrdersPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update order status");
     }
+  };
+
+  const handleRefreshOrders = () => {
+    refetch();
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -334,7 +338,6 @@ export default function OrdersPage() {
                                   className="h-8 text-red-600 hover:text-red-700 gap-1 text-xs"
                                 >
                                   <Trash2 size={14} />
-                                  <span>Remove</span>
                                 </Button>
                               </td>
                             </tr>
@@ -345,12 +348,11 @@ export default function OrdersPage() {
 
                     <div>
                       <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 block mb-1.5">
-                        Remarks / Notes (Optional)
+                        Notes
                       </label>
                       <Input
                         value={orderNotes}
                         onChange={(e) => setOrderNotes(e.target.value)}
-                        placeholder="e.g. Urgent morning delivery"
                         className="h-10 text-sm"
                       />
                     </div>
@@ -392,6 +394,11 @@ export default function OrdersPage() {
               </button>
             )
           )}
+        </div>
+        <div>
+          <Button variant="ghost" onClick={handleRefreshOrders} className="px-4 py-2 text-sm font-bold">
+            <RefreshCcw className="w-4 h-4" />
+          </Button>
         </div>
 
         {/* Orders Table */}

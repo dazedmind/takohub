@@ -15,9 +15,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
 
 export { getSessionUser as getSession };
 
-export async function requireAuth(request?: any): Promise<
-  { user: SessionUser } | NextResponse
-> {
+export async function requireAuth(request?: any): Promise<any> {
   const user = await getSessionUser();
   const isOriginalApi = request && (request instanceof Request || (typeof request === "object" && "headers" in request));
 
@@ -28,13 +26,15 @@ export async function requireAuth(request?: any): Promise<
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  return { user };
+  const result = { ...user } as any;
+  result.user = result;
+  return result;
 }
 
 export async function requireRole(
   firstArg: any,
   ...restRoles: any[]
-): Promise<{ user: SessionUser } | NextResponse> {
+): Promise<any> {
   const isOriginalApi = firstArg && (firstArg instanceof Request || (typeof firstArg === "object" && "headers" in firstArg));
   
   let roles: UserRole[] = [];
@@ -53,7 +53,7 @@ export async function requireRole(
     return result;
   }
 
-  if (!roles.includes(result.user.role)) {
+  if (!roles.includes(result.role)) {
     if (isOriginalApi) {
       throw new Error("Forbidden");
     }

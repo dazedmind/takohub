@@ -45,10 +45,11 @@ export function CameraModal({
       fetch("/api/branches")
         .then((res) => res.json())
         .then((data) => {
-          if (data.branches && data.branches.length > 0) {
-            setBranches(data.branches);
+          const list = Array.isArray(data) ? data : (data.branches || []);
+          if (list.length > 0) {
+            setBranches(list);
             if (!selectedBranchId) {
-              setSelectedBranchId(data.branches[0].branchId);
+              setSelectedBranchId(list[0].branchId);
             }
           }
         })
@@ -211,7 +212,7 @@ export function CameraModal({
             <option value="">-- Choose Branch Location --</option>
             {branches.map((b) => (
               <option key={b.branchId} value={b.branchId} className="text-zinc-900 bg-white">
-                {b.branchName} {b.address ? `(${b.address})` : ""}
+                {b.branchName}
               </option>
             ))}
           </select>
