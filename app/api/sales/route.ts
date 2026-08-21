@@ -60,6 +60,7 @@ export async function GET(request: Request) {
         trashLeftover: sales.trashLeftover,
         grossSales: sales.grossSales,
         netSales: sales.netSales,
+        remarks: sales.remarks,
         durationMinutes: sessionLog.durationMinutes,
       })
       .from(sales)

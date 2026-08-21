@@ -7,12 +7,21 @@ import { useSessionContext } from "@/components/providers/session-provider";
 import { formatPeso, formatShortOver } from "@/lib/business-logic";
 import { useBranchesQuery, useSalesQuery } from "@/lib/queries";
 import type { SessionUser } from "@/lib/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export default function SalesPage() {
   const { user } = useSessionContext();
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [viewingSale, setViewingSale] = useState<any | null>(null);
 
   const isBS = user?.role === "BS";
 
@@ -166,6 +175,7 @@ export default function SalesPage() {
                     <th className="py-3 px-4 font-bold text-right">Cash / GCash</th>
                     <th className="py-3 px-4 font-bold text-center">Short / Over</th>
                     <th className="py-3 px-4 font-bold">Notes</th>
+                    <th className="py-3 px-4 font-bold text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -213,7 +223,7 @@ export default function SalesPage() {
                             className={
                               shortOverInfo.type === "SHORT"
                                 ? "text-red-600 font-bold"
-                                : shortOverInfo.type === "OVER"
+                               : shortOverInfo.type === "OVER"
                                 ? "text-emerald-600 font-bold"
                                 : "text-zinc-400 font-medium"
                             }
@@ -222,7 +232,17 @@ export default function SalesPage() {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 italic max-w-xs truncate font-medium">
-                          {s.trashLeftover || "—"}
+                          {s.remarks || s.trashLeftover || "—"}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => setViewingSale(s)}
+                            className="h-7 px-3 text-[11px] font-bold"
+                          >
+                            View
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -233,6 +253,145 @@ export default function SalesPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Sales Details Dialog */}
+      <Dialog open={!!viewingSale} onOpenChange={(open) => !open && setViewingSale(null)}>
+        <DialogContent className="sm:max-w-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 shadow-xl rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+              Sales Log Details
+            </DialogTitle>
+          </DialogHeader>
+          {viewingSale && (
+            <div className="space-y-4 py-3 text-sm">
+              <div className="grid grid-cols-2 gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3 text-xs text-zinc-500">
+                <div>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 block">Date</span>
+                  {new Date(viewingSale.date).toLocaleString("en-PH", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })}
+                </div>
+                <div>
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 block">Seller</span>
+                  {viewingSale.userName}
+                </div>
+                <div className="mt-2">
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 block">Branch</span>
+                  {viewingSale.branchName}
+                </div>
+                <div className="mt-2">
+                  <span className="font-semibold text-zinc-700 dark:text-zinc-300 block">Shift Duration</span>
+                  {viewingSale.durationMinutes ? `${viewingSale.durationMinutes} mins` : "—"}
+                </div>
+              </div>
+
+              {/* Only show plates if it's not 0 total plates (IM/ADMIN EOD reports don't have plates) */}
+              {viewingSale.totalPlates > 0 && (
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-zinc-800 dark:text-zinc-200">Plates Sold</h3>
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
+                      <span className="text-zinc-500 block">Cheese</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.cheese}</span>
+                    </div>
+                    <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
+                      <span className="text-zinc-500 block">Octobits</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.octobits}</span>
+                    </div>
+                    <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
+                      <span className="text-zinc-500 block">Crab</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.crab}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs font-semibold py-1 px-2 bg-zinc-100 dark:bg-zinc-800 rounded">
+                    <span>Total Plates</span>
+                    <span>{viewingSale.totalPlates} pcs</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                <h3 className="font-semibold text-zinc-800 dark:text-zinc-200">Financial Breakdown</h3>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Gross Sales</span>
+                    <span className="font-mono font-semibold">{formatPeso(viewingSale.totalSales)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Expenses</span>
+                    <span className="font-mono text-red-600">-{formatPeso(viewingSale.expenses)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Free B-Box</span>
+                    <span className="font-mono text-zinc-600">-{formatPeso(viewingSale.free)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Short / Over</span>
+                    <span className={`font-mono ${viewingSale.shortOver > 0 ? "text-red-600" : viewingSale.shortOver < 0 ? "text-emerald-600" : "text-zinc-600"}`}>
+                      {viewingSale.shortOver > 0 ? `-${formatPeso(viewingSale.shortOver)}` : viewingSale.shortOver < 0 ? `+${formatPeso(Math.abs(viewingSale.shortOver))}` : formatPeso(0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Trash / Left Over</span>
+                    <span className="font-mono text-zinc-600">-{formatPeso(Number(viewingSale.trashLeftover) || 0)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-zinc-100 dark:border-zinc-800 pt-1.5 font-bold text-sm">
+                    <span className="text-zinc-800 dark:text-zinc-200">Net Sales</span>
+                    <span className="font-mono text-zinc-900 dark:text-zinc-100">
+                      {formatPeso(viewingSale.netSales ?? (viewingSale.totalSales - viewingSale.expenses - (viewingSale.free || 0) - (viewingSale.shortOver || 0) - (Number(viewingSale.trashLeftover) || 0)))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Details */}
+              {viewingSale.totalPlates > 0 && (
+                <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                  <h3 className="font-semibold text-zinc-800 dark:text-zinc-200">Payments Collected</h3>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
+                      <span className="text-zinc-500 block">Cash on Hand</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.cashOnhand)}</span>
+                    </div>
+                    <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
+                      <span className="text-zinc-500 block">GCash Payment</span>
+                      <span className="font-bold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.gcashPayment)}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs py-1 px-2 border border-zinc-100 dark:border-zinc-800 rounded">
+                    <span className="text-zinc-500">Calculated Salary</span>
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.salary)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Remarks/Notes */}
+              <div className="space-y-1.5 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                <h3 className="font-semibold text-zinc-800 dark:text-zinc-200">
+                  {viewingSale.totalPlates > 0 ? "Remarks / Notes" : "EOD Report / Notes"}
+                </h3>
+                <div className="bg-zinc-50 dark:bg-zinc-900 p-3 rounded border border-zinc-100 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap italic font-medium">
+                  {viewingSale.remarks || "No remarks provided."}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="sm:justify-center flex justify-center w-full">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setViewingSale(null)}
+              className="h-10 text-sm font-bold min-w-[100px] mx-auto animate-in zoom-in-95 duration-200"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

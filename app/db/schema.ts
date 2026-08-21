@@ -95,6 +95,7 @@ export const sales = pgTable("sales", {
   trashLeftover: integer("trash_leftover").default(0).notNull(),
   grossSales: integer("gross_sales").default(0).notNull(),
   netSales: integer("net_sales").default(0).notNull(),
+  remarks: text("remarks"),
 });
 
 // Sales Remarks

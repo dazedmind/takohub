@@ -67,18 +67,10 @@ export async function POST(request: Request) {
           trashLeftover,
           grossSales,
           netSales,
+          remarks: remarksText.trim() || null,
           date: endTime,
         })
         .returning();
-
-      // If remarks are provided, store in the remarks table
-      if (remarksText.trim()) {
-        await db.insert(salesRemarks).values({
-          sessionId: activeShift.sessionId,
-          userId: session.id,
-          remarks: remarksText.trim(),
-        });
-      }
 
       // Automatically deduct branch inventory for Paper Plates (itemId 9) and Toothpicks (itemId 10)
       // Paper Plates: 1 pc per plate sold (including free plates)
@@ -142,9 +134,9 @@ export async function POST(request: Request) {
       return Response.json({ success: true, sales: salesRecord });
     } else {
       // Inventory Manager (IM) or ADMIN ending shift
-      const notes = body.notes || "No EOD report notes provided.";
+      const notes = body.eodReport || body.notes || "No EOD report notes provided.";
 
-      // For managers/admins, create a Sales record where trashLeftover stores the EOD notes, and other stats are 0
+      // For managers/admins, create a Sales record where remarks stores the EOD notes, and other stats are 0
       const [salesRecord] = await db
         .insert(sales)
         .values({
@@ -162,7 +154,8 @@ export async function POST(request: Request) {
           gcashPayment: 0,
           free: 0,
           shortOver: 0,
-          trashLeftover: notes,
+          trashLeftover: 0,
+          remarks: notes.trim(),
           date: endTime,
         })
         .returning();

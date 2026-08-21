@@ -76,28 +76,28 @@ export function SalesLogModal({
     return calculateSalary(totalPlatesSold);
   }, [totalPlatesSold]);
 
-  const tallyDiffers = useMemo(() => {
-    return (Number(cashOnhand) || 0) + (Number(gcashPayment) || 0) !== totalSales;
-  }, [cashOnhand, gcashPayment, totalSales]);
+  // const tallyDiffers = useMemo(() => {
+  //   return (Number(cashOnhand) || 0) + (Number(gcashPayment) || 0) !== totalSales;
+  // }, [cashOnhand, gcashPayment, totalSales]);
 
   const isValid = useMemo(() => {
     if (isIM) {
       return true; // EOD report is optional or notes only
     }
     return (
-      Number(cheese) >= 0 &&
-      Number(octobits) >= 0 &&
-      Number(crab) >= 0 &&
-      Number(cashOnhand) >= 0 &&
+      Number(cheese) > 0 &&
+      Number(octobits) > 0 &&
+      Number(crab) > 0 &&
+      Number(cashOnhand) > 0 &&
       Number(expenses) >= 0 &&
-      Number(gcashPayment) >= 0 &&
+      Number(gcashPayment) > 0 &&
       Number(free) >= 0 &&
       Number(trashLeftover) >= 0 &&
       Number(shortVal) >= 0 &&
-      Number(overVal) >= 0 &&
-      !tallyDiffers
+      Number(overVal) >= 0
+      // !tallyDiffers
     );
-  }, [isIM, cheese, octobits, crab, cashOnhand, expenses, gcashPayment, free, trashLeftover, shortVal, overVal, tallyDiffers]);
+  }, [isIM, cheese, octobits, crab, cashOnhand, expenses, gcashPayment, free, trashLeftover, shortVal, overVal]);
 
   const handleEndShift = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -330,22 +330,6 @@ export function SalesLogModal({
 
                     <div className="flex gap-3 items-center">
                       <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
-                        Expenses
-                      </label>
-                      <div className="relative w-1/3">
-                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={expenses}
-                          onChange={(e) => setExpenses(e.target.value)}
-                          className="pl-7 h-10 text-sm font-semibold w-full"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3 items-center">
-                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
                         GCash Payments
                       </label>
                       <div className="relative w-1/3">
@@ -355,6 +339,22 @@ export function SalesLogModal({
                           min={0}
                           value={gcashPayment}
                           onChange={(e) => setGcashPayment(e.target.value)}
+                          className="pl-7 h-10 text-sm font-semibold w-full"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 items-center">
+                      <label className="w-full text-sm font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                        Expenses
+                      </label>
+                      <div className="relative w-1/3">
+                        <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={expenses}
+                          onChange={(e) => setExpenses(e.target.value)}
                           className="pl-7 h-10 text-sm font-semibold w-full"
                         />
                       </div>
@@ -442,11 +442,11 @@ export function SalesLogModal({
                       />
                     </div>
 
-                    {tallyDiffers && (
+                    {/* {tallyDiffers && (
                       <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-lg text-xs text-amber-700 dark:text-amber-400 font-medium">
                         The sum of Cash on Hand ({formatPeso(Number(cashOnhand) || 0)}) and GCash Payments ({formatPeso(Number(gcashPayment) || 0)}) is {formatPeso((Number(cashOnhand) || 0) + (Number(gcashPayment) || 0))}, which does not match the Sales Revenue of {formatPeso(totalSales)}.
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </div>
               </div>
