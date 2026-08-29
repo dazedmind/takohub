@@ -35,12 +35,12 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!reason) {
-      return NextResponse.json(
-        { error: "A clear reason is required for any stock adjustment" },
-        { status: 400 }
-      );
-    }
+    // if (!reason) {
+    //   return NextResponse.json(
+    //     { error: "A clear reason is required for any stock adjustment" },
+    //     { status: 400 }
+    //   );
+    // }
 
     // If BS, they must specify their branch and cannot adjust central
     if (currentUser.role === "BS" && !branchId) {

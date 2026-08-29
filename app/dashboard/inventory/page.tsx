@@ -146,11 +146,6 @@ export default function InventoryPage() {
       return;
     }
 
-    if (!adjustReason.trim()) {
-      dialog.show({ title: "Verification Required", message: "Please provide a reason for the adjustment", type: "error" });
-      return;
-    }
-
     try {
       await adjustMutation.mutateAsync({
         itemId: Number(adjustItemId),
@@ -690,7 +685,6 @@ export default function InventoryPage() {
                   value={adjustReason}
                   onChange={(e) => setAdjustReason(e.target.value)}
                   placeholder="e.g. Damaged / Count correction"
-                  required
                   className="h-9 text-xs"
                 />
               </div>

@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react";
+import { BiSolidCheckCircle, BiSolidError, BiSolidErrorCircle } from "react-icons/bi";
 
 interface DialogOptions {
   title: string;
@@ -37,6 +39,20 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     setIsOpen(true);
   }, []);
 
+  const getIcon = () => {
+    switch (options.type) {
+      case "success":
+        return <BiSolidCheckCircle className="w-14 h-14 text-emerald-500 mb-4" />;
+      case "error":
+        return <BiSolidError className="w-14 h-14 text-red-500 mb-4" />;
+      case "warning":
+        return <BiSolidError className="w-14 h-14 text-amber-500 mb-4" />;
+      case "info":
+      default:
+        return <BiSolidErrorCircle className="w-14 h-14 text-blue-500 mb-4" />;
+    }
+  };
+
   const hide = useCallback(() => {
     setIsOpen(false);
   }, []);
@@ -45,9 +61,9 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     <DialogContext.Provider value={{ show, hide }}>
       {children}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-xl rounded-xl animate-in zoom-in-95 fade-in duration-200">
-          <DialogHeader className="text-center flex flex-col items-center justify-center">
-            <DialogTitle className={`text-lg font-bold text-center w-full ${
+        <DialogContent className="max-w-xs py-12 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-xl rounded-xl animate-in zoom-in-95 fade-in duration-200">
+          {/* <DialogHeader className="text-center flex flex-col items-center justify-center">
+            <DialogTitle className={`text-2xl font-bold text-center w-full ${
               options.type === "success"
                 ? "text-emerald-600 dark:text-emerald-400"
                 : options.type === "error"
@@ -58,11 +74,12 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
             }`}>
               {options.title}
             </DialogTitle>
-          </DialogHeader>
-          <div className="py-2 text-sm text-center text-zinc-600 dark:text-zinc-400">
-            {options.message}
+          </DialogHeader> */}
+          <div className="flex flex-col items-center justify-center text-center -space-y-1">
+            {getIcon()}
+            <h2 className="font-semibold text-2xl">{options.title}</h2>
+            <p className="py-2 text-base leading-tight text-center text-zinc-600 dark:text-zinc-400">{options.message}</p>
           </div>
-          <DialogFooter className="sm:justify-center flex justify-center w-full">
             <Button
               type="button"
               variant={options.type === "success" ? "primary" : "secondary"}
@@ -72,11 +89,10 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
                   options.onConfirm();
                 }
               }}
-              className="h-10 text-sm font-bold min-w-[100px] mx-auto"
+              className="h-10 text-sm font-bold mx-auto"
             >
               {options.confirmText}
             </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DialogContext.Provider>
