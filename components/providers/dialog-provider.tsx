@@ -61,7 +61,7 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     <DialogContext.Provider value={{ show, hide }}>
       {children}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-xs py-12 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-xl rounded-xl animate-in zoom-in-95 fade-in duration-200">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-xs py-12 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-xl rounded-xl animate-in zoom-in-95 fade-in duration-200">
           {/* <DialogHeader className="text-center flex flex-col items-center justify-center">
             <DialogTitle className={`text-2xl font-bold text-center w-full ${
               options.type === "success"

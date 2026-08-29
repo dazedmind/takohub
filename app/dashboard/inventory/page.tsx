@@ -367,8 +367,8 @@ export default function InventoryPage() {
                                 variant="outline"
                                 className={
                                   item.status === "LOW_STOCK"
-                                    ? "border-red-500 text-red-600 bg-red-50 dark:bg-red-950/20 text-xs px-2.5 py-0.5 font-bold"
-                                    : "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 text-xs px-2.5 py-0.5 font-bold"
+                                    ? "border-yellow-500 text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20 text-[10px] px-2.5 py-0.5 font-bold"
+                                    : "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 text-[10px] px-2.5 py-0.5 font-bold"
                                 }
                               >
                                 {item.status === "LOW_STOCK" ? "Low Stock" : "In Stock"}
@@ -412,7 +412,7 @@ export default function InventoryPage() {
                         <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
                           <th className="py-3 px-4 font-bold">Product</th>
                           {/* <th className="py-3 px-4 font-bold">Unit</th> */}
-                          <th className="py-3 px-4 font-bold text-center">Current Quantity</th>
+                          <th className="py-3 px-4 font-bold text-center">Stock</th>
                           <th className="py-3 px-4 font-bold">Status</th>
                           <th className="py-3 px-4 font-bold text-right">Actions</th>
                         </tr>
@@ -435,8 +435,8 @@ export default function InventoryPage() {
                                 variant="outline"
                                 className={
                                   item.status === "LOW_STOCK"
-                                    ? "border-red-500 text-red-600 bg-red-50 dark:bg-red-950/20 text-xs px-2.5 py-0.5 font-bold"
-                                    : "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 text-xs px-2.5 py-0.5 font-bold"
+                                    ? "border-yellow-500 text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20 text-[10px] px-2.5 py-0.5 font-bold"
+                                    : "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 text-[10px] px-2.5 py-0.5 font-bold"
                                 }
                               >
                                 {item.status === "LOW_STOCK" ? "Low Stock" : "In Stock"}
