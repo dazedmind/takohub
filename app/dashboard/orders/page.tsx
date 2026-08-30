@@ -532,16 +532,16 @@ export default function OrdersPage() {
                     <thead className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
                       <tr className="text-left">
                         <th className="py-2.5 px-3 font-bold">Item</th>
+                        <th className="py-2.5 px-3 font-bold">Qty</th>
                         <th className="py-2.5 px-3 font-bold">Unit</th>
-                        <th className="py-2.5 px-3 font-bold text-right">Qty</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                       {selectedOrder.items?.map((item) => (
                         <tr key={item.itemId}>
                           <td className="py-2.5 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{item.itemName}</td>
+                          <td className="py-2.5 px-3 font-bold text-base">{item.quantity}</td>
                           <td className="py-2.5 px-3 text-zinc-500">{item.unit}</td>
-                          <td className="py-2.5 px-3 text-right font-bold text-base">{item.quantity}</td>
                         </tr>
                       ))}
                     </tbody>

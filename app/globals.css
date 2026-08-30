@@ -140,3 +140,31 @@
     @apply font-sans;
   }
 }
+
+/* Scrollbar utilities */
+.scrollbar-none {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--border) transparent !important;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: oklch(0.8 0 0) !important;
+  border-radius: 9999px !important;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: oklch(0.3 0 0) !important;
+}

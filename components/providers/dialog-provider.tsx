@@ -19,7 +19,12 @@ interface DialogContextType {
   hide: () => void;
 }
 
-const DialogContext = createContext<DialogContextType | null>(null);
+const CONTEXT_KEY = Symbol.for("takohub.dialog_context");
+const globalAny = globalThis as any;
+if (!globalAny[CONTEXT_KEY]) {
+  globalAny[CONTEXT_KEY] = createContext<DialogContextType | null>(null);
+}
+const DialogContext = globalAny[CONTEXT_KEY] as React.Context<DialogContextType | null>;
 
 export function DialogProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
