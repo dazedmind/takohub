@@ -85,12 +85,12 @@ export function SalesLogModal({
       return true; // EOD report is optional or notes only
     }
     return (
-      Number(cheese) > 0 &&
-      Number(octobits) > 0 &&
-      Number(crab) > 0 &&
+      Number(cheese) >= 0 &&
+      Number(octobits) >= 0 &&
+      Number(crab) >= 0 &&
       Number(cashOnhand) > 0 &&
       Number(expenses) >= 0 &&
-      Number(gcashPayment) > 0 &&
+      Number(gcashPayment) >= 0 &&
       Number(free) >= 0 &&
       Number(trashLeftover) >= 0 &&
       Number(shortVal) >= 0 &&
@@ -108,16 +108,6 @@ export function SalesLogModal({
 
     if (isIM && eodReport.trim() === "") {
       dialog.show({ title: "Verification Required", message: "Please provide an EOD report or notes", type: "error" });
-      return;
-    }
-
-    if (isBS && totalPlatesSold === 0 && totalSales === 0) {
-      dialog.show({ title: "Verification Required", message: "Please log at least one plate sold or sales amount", type: "error" });
-      return;
-    }
-
-    if (!isValid) {
-      dialog.show({ title: "Verification Required", message: "Please complete all required fields properly and ensure Cash and GCash match the Sales Revenue.", type: "error" });
       return;
     }
 
@@ -267,7 +257,6 @@ export function SalesLogModal({
                         min={0}
                         value={cheese}
                         onChange={(e) => setCheese(e.target.value)}
-                        required
                         className="font-bold text-base text-center h-11"
                       />
                     </div>
@@ -281,7 +270,6 @@ export function SalesLogModal({
                         min={0}
                         value={octobits}
                         onChange={(e) => setOctobits(e.target.value)}
-                        required
                         className="font-bold text-base text-center h-11"
                       />
                     </div>
@@ -295,7 +283,6 @@ export function SalesLogModal({
                         min={0}
                         value={crab}
                         onChange={(e) => setCrab(e.target.value)}
-                        required
                         className="font-bold text-base text-center h-11"
                       />
                     </div>
