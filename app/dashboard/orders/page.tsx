@@ -59,7 +59,8 @@ export default function OrdersPage() {
 
   const { data: activeShiftData } = useActiveShiftQuery();
   const activeShift = activeShiftData?.activeShift;
-  const bsHasActiveShift = activeShift !== null && activeShift !== undefined;
+  const hasActiveShift = activeShift !== null && activeShift !== undefined;
+  const isShiftRequired = (isBS || isIM) && !hasActiveShift;
 
   const formatOrderIdDisplay = (orderId: number, createdOn: string | Date) => {
     const year = createdOn ? new Date(createdOn).getFullYear() : new Date().getFullYear();
@@ -129,7 +130,6 @@ export default function OrdersPage() {
     });
 
     setItemQuantity("1");
-    dialog.show({ title: "Success", message: `Added ${itemObj.itemName} (${qty}) to basket`, type: "success" });
   };
 
   const handleRemoveFromBasket = (itemId: number) => {
@@ -173,7 +173,9 @@ export default function OrdersPage() {
       dialog.show({
         title: "Success",
         message: nextStatus === "FULFILLED"
-          ? "Order fulfilled! Stock transferred to branch."
+          ? "Order received and completed! Stock transferred to branch."
+          : nextStatus === "READY"
+          ? "Order marked as for delivery"
           : `Order updated to ${nextStatus}`,
         type: "success"
       });
@@ -205,15 +207,18 @@ export default function OrdersPage() {
         </p>
       </div>
 
-      {/* BRANCH SELLER WITHOUT ACTIVE SHIFT */}
-      {isBS && bsHasActiveShift === false && (
+      {/* LOCKED IF SHIFT REQUIRED BUT NOT ACTIVE */}
+      {isShiftRequired ? (
         <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm text-center py-12">
           <CardContent className="space-y-3">
+            <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6" />
+            </div>
             <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              Manage Orders
+              Shift Required
             </h2>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Start your shift to request branch supplies.
+              You must start your shift on the dashboard before you can access Orders.
             </p>
             <Button
               type="button"
@@ -227,10 +232,10 @@ export default function OrdersPage() {
             </Button>
           </CardContent>
         </Card>
-      )}
-
-      {/* BRANCH SELLER ORDER BASKET */}
-      {isBS && bsHasActiveShift === true && (
+      ) : (
+        <>
+          {/* BRANCH SELLER ORDER BASKET */}
+          {isBS && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <div className="lg:col-span-5">
             <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
@@ -316,14 +321,14 @@ export default function OrdersPage() {
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-md">
+                    <div className="overflow-x-auto max-h-[260px] overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-md">
                       <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                            <th className="py-3 px-3.5 font-bold">Item</th>
-                            <th className="py-3 px-3.5 font-bold">Unit</th>
-                            <th className="py-3 px-3.5 font-bold text-center">Qty</th>
-                            <th className="py-3 px-3.5 text-right font-bold">Action</th>
+                        <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 z-10">
+                          <tr className="text-left">
+                            <th className="py-2.5 px-3.5 font-bold bg-zinc-50 dark:bg-zinc-900">Item</th>
+                            <th className="py-2.5 px-3.5 font-bold bg-zinc-50 dark:bg-zinc-900">Unit</th>
+                            <th className="py-2.5 px-3.5 font-bold text-center bg-zinc-50 dark:bg-zinc-900">Qty</th>
+                            <th className="py-2.5 px-3.5 text-right font-bold bg-zinc-50 dark:bg-zinc-900">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -393,7 +398,7 @@ export default function OrdersPage() {
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
-                {tab === "ALL" ? "All" : tab}
+                {tab === "ALL" ? "All" : tab === "READY" ? "FOR DELIVERY" : tab}
               </button>
             )
           )}
@@ -464,7 +469,7 @@ export default function OrdersPage() {
                                 : "border-red-500 text-red-600 bg-red-50 dark:bg-red-950/20"
                             }`}
                           >
-                            {order.status}
+                            {order.status === "READY" ? "FOR DELIVERY" : order.status}
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-right">
@@ -487,23 +492,43 @@ export default function OrdersPage() {
           </CardContent>
         </Card>
       </div>
+      </>
+      )}
 
       {/* Order Details & Status Workflow Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Order #{selectedOrder ? formatOrderIdDisplay(selectedOrder.orderId, selectedOrder.createdOn) : ""}</DialogTitle>
-            <DialogDescription className="text-sm">
-              {selectedOrder?.branchName} • Requested by {selectedOrder?.orderedByName}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+          {/* FIXED HEADER: Order # & Details (Status, Date, Notes, Fulfilled On) */}
+          <div className="p-5 pb-3 flex-shrink-0 border-b border-zinc-200 dark:border-zinc-800 space-y-3">
+            <DialogHeader className="p-0 border-0">
+              <DialogTitle className="text-xl font-bold">
+                Order #{selectedOrder ? formatOrderIdDisplay(selectedOrder.orderId, selectedOrder.createdOn) : ""}
+              </DialogTitle>
+              <DialogDescription className="text-sm">
+                {selectedOrder?.branchName} • Requested by {selectedOrder?.orderedByName}
+              </DialogDescription>
+            </DialogHeader>
 
-          {selectedOrder && (
-            <div className="space-y-4 py-2 text-sm">
-              <div className="space-y-1.5 text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
-                <div className="flex justify-between">
+            {selectedOrder && (
+              <div className="space-y-1.5 text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-sm">
+                <div className="flex justify-between items-center">
                   <span className="font-medium">Status:</span>
-                  <span className="font-bold text-zinc-900 dark:text-zinc-100">{selectedOrder.status}</span>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs px-2.5 py-0.5 font-bold ${
+                      selectedOrder.status === "PENDING"
+                        ? "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20"
+                        : selectedOrder.status === "PROCESSING"
+                        ? "border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/20"
+                        : selectedOrder.status === "READY"
+                        ? "border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-950/20"
+                        : selectedOrder.status === "FULFILLED"
+                        ? "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
+                        : "border-red-500 text-red-600 bg-red-50 dark:bg-red-950/20"
+                    }`}
+                  >
+                    {selectedOrder.status === "READY" ? "FOR DELIVERY" : selectedOrder.status}
+                  </Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-medium">Date:</span>
@@ -522,143 +547,117 @@ export default function OrdersPage() {
                   </div>
                 )}
               </div>
+            )}
+          </div>
 
-              <div>
-                <span className="font-bold text-zinc-800 dark:text-zinc-200 block mb-2 text-sm">
-                  Items Requested
-                </span>
-                <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
-                      <tr className="text-left">
-                        <th className="py-2.5 px-3 font-bold">Item</th>
-                        <th className="py-2.5 px-3 font-bold">Qty</th>
-                        <th className="py-2.5 px-3 font-bold">Unit</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                      {selectedOrder.items?.map((item) => (
-                        <tr key={item.itemId}>
-                          <td className="py-2.5 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{item.itemName}</td>
-                          <td className="py-2.5 px-3 font-bold text-base">{item.quantity}</td>
-                          <td className="py-2.5 px-3 text-zinc-500">{item.unit}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* IM / Admin Status Updates */}
-              {(isIM || isAdmin) &&
-                selectedOrder.status !== "FULFILLED" &&
-                selectedOrder.status !== "CANCELLED" && (
-                  <div className="pt-3 space-y-2.5 border-t border-zinc-200 dark:border-zinc-800">
-                    <span className="font-bold text-zinc-800 dark:text-zinc-200 block text-sm">
-                      Update Order Status
-                    </span>
-                    <div className="flex gap-2">
-                      {/* PENDING -> PROCESSING / CANCEL */}
-                      {selectedOrder.status === "PENDING" && (
-                        <>
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleUpdateStatus(selectedOrder.orderId, "PROCESSING")}
-                            disabled={updateStatusMutation.isPending}
-                            className="flex-1 h-9 text-sm font-bold"
-                          >
-                            Start Processing
-                          </Button>
-                          {(user?.role === "ADMIN" || selectedOrder.orderedBy === user?.id) && (
-                            <Button
-                              type="button"
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleUpdateStatus(selectedOrder.orderId, "CANCELLED")}
-                              disabled={updateStatusMutation.isPending}
-                              className="h-9 text-sm font-semibold"
-                            >
-                              Cancel Order
-                            </Button>
-                          )}
-                        </>
-                      )}
-
-                      {/* PROCESSING -> READY / CANCEL */}
-                      {selectedOrder.status === "PROCESSING" && (
-                        <>
-                          <Button
-                            type="button"
-                            variant="primary"
-                            size="sm"
-                            onClick={() => handleUpdateStatus(selectedOrder.orderId, "READY")}
-                            disabled={updateStatusMutation.isPending}
-                            className="flex-1 h-9 text-sm font-bold"
-                          >
-                            Mark Ready for Delivery
-                          </Button>
-                          {(user?.role === "ADMIN" || selectedOrder.orderedBy === user?.id) && (
-                            <Button
-                              type="button"
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleUpdateStatus(selectedOrder.orderId, "CANCELLED")}
-                              disabled={updateStatusMutation.isPending}
-                              className="h-9 text-sm font-semibold"
-                            >
-                              Cancel Order
-                            </Button>
-                          )}
-                        </>
-                      )}
-
-                      {/* READY -> FULFILL / CANCEL */}
-                      {selectedOrder.status === "READY" && (
-                        <>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleUpdateStatus(selectedOrder.orderId, "FULFILLED")}
-                            disabled={updateStatusMutation.isPending}
-                            className="flex-1 h-9 text-sm font-bold"
-                          >
-                            Mark as Fulfilled
-                          </Button>
-                          {(user?.role === "ADMIN" || selectedOrder.orderedBy === user?.id) && (
-                            <Button
-                              type="button"
-                              variant="danger"
-                              size="sm"
-                              onClick={() => handleUpdateStatus(selectedOrder.orderId, "CANCELLED")}
-                              disabled={updateStatusMutation.isPending}
-                              className="h-9 text-sm font-semibold"
-                            >
-                              Cancel Order
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
+          {/* THE ONLY SCROLLABLE AREA: Items Order */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-zinc-800 dark:text-zinc-200 text-sm">
+                Items Requested
+              </span>
+              <span className="text-xs font-semibold text-zinc-500">
+                {selectedOrder?.items?.length || 0} items
+              </span>
             </div>
-          )}
+            <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 z-10">
+                  <tr className="text-left">
+                    <th className="py-2.5 px-3 font-bold bg-zinc-50 dark:bg-zinc-900">Item</th>
+                    <th className="py-2.5 px-3 font-bold bg-zinc-50 dark:bg-zinc-900 text-center">Qty</th>
+                    <th className="py-2.5 px-3 font-bold bg-zinc-50 dark:bg-zinc-900">Unit</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {selectedOrder?.items?.map((item) => (
+                    <tr key={item.itemId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
+                      <td className="py-2.5 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{item.itemName}</td>
+                      <td className="py-2.5 px-3 font-bold text-base text-center">{item.quantity}</td>
+                      <td className="py-2.5 px-3 text-zinc-500">{item.unit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-          <DialogFooter className="pt-2 border-t border-zinc-200 dark:border-zinc-800">
+          {/* FIXED FOOTER: Update status button right beside close button, w-fit */}
+          <div className="flex-shrink-0 p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-end gap-2.5">
+            {selectedOrder && (
+              <>
+                {/* Cancel Order (for Admin or Requester if PENDING or READY) */}
+                {(user?.role === "ADMIN" || selectedOrder.orderedBy === user?.id) &&
+                  selectedOrder.status == "PENDING" &&(
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleUpdateStatus(selectedOrder.orderId, "CANCELLED")}
+                      disabled={updateStatusMutation.isPending}
+                      className="w-fit h-9 text-xs sm:text-sm font-semibold"
+                    >
+                      Cancel Order
+                    </Button>
+                  )}
+
+                {/* PENDING -> PROCESSING (IM / Admin) */}
+                {(isIM || isAdmin) && selectedOrder.status === "PENDING" && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleUpdateStatus(selectedOrder.orderId, "PROCESSING")}
+                    disabled={updateStatusMutation.isPending}
+                    className="w-fit h-9 text-xs sm:text-sm font-bold"
+                  >
+                    Start Processing
+                  </Button>
+                )}
+
+                {/* PROCESSING -> READY / FOR DELIVERY (IM / Admin) */}
+                {(isIM || isAdmin) && selectedOrder.status === "PROCESSING" && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleUpdateStatus(selectedOrder.orderId, "READY")}
+                    disabled={updateStatusMutation.isPending}
+                    className="w-fit h-9 text-xs sm:text-sm font-bold"
+                  >
+                    Mark Ready for Delivery
+                  </Button>
+                )}
+
+                {/* READY ("FOR DELIVERY") -> RECEIVE (Store Branch BS view, or Admin) */}
+                {(isBS || isAdmin) && selectedOrder.status === "READY" && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleUpdateStatus(selectedOrder.orderId, "FULFILLED")}
+                    disabled={updateStatusMutation.isPending}
+                    className="w-fit h-9 text-xs sm:text-sm font-bold"
+                  >
+                    Receive
+                  </Button>
+                )}
+              </>
+            )}
+
             <Button
               type="button"
               variant="tertiary"
               onClick={() => setSelectedOrder(null)}
-              className="text-sm h-9"
+              className="w-fit text-sm h-9 px-4"
             >
               Close
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
+
+
   );
 }

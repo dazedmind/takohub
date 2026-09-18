@@ -22,8 +22,10 @@ import {
   Clock,
   Receipt,
   LogOut,
+  Lock,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { useActiveShiftQuery } from "@/lib/queries";
 import type { AppSession, UserRole } from "@/lib/types";
 import Logo from "/logo.png"
 import Image from "next/image";
@@ -75,6 +77,11 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
   const userName = session?.user?.name || "User";
   const userInitial = userName.charAt(0).toUpperCase();
 
+  const { data: activeShiftData } = useActiveShiftQuery();
+  const hasActiveShift = !!activeShiftData?.activeShift;
+  const isShiftRequiredRole = userRole === "BS" || userRole === "IM";
+  const isShiftLocked = isShiftRequiredRole && !hasActiveShift;
+
   const handleLogout = async () => {
     setIsLoading(true);
     try {
@@ -107,24 +114,39 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
       <SidebarContent>
         <SidebarMenu className="px-3 py-3 space-y-1">
           {menuItems.map((item) => {
+            const isItemLocked = isShiftLocked && item.href !== "/dashboard";
             const isActive =
               pathname === item.href ||
               (item.href !== "/dashboard" && pathname.startsWith(item.href));
+
             return (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
-                  asChild
+                  asChild={!isItemLocked}
+                  disabled={isItemLocked}
                   isActive={isActive}
                   className={`h-10 px-3.5 rounded-lg text-sm font-semibold transition-colors ${
-                    isActive
+                    isItemLocked
+                      ? "opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600 hover:bg-transparent pointer-events-none select-none"
+                      : isActive
                       ? "bg-[#F4D671]/20 text-[#1C1C1C] dark:text-[#F4D671] font-bold"
                       : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
-                  <Link href={item.href} className="flex items-center gap-3">
-                    {item.icon}
-                    <span className="text-sm">{item.name}</span>
-                  </Link>
+                  {isItemLocked ? (
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        {item.icon}
+                        <span className="text-sm">{item.name}</span>
+                      </div>
+                      <Lock size={14} className="text-zinc-400 dark:text-zinc-600" />
+                    </div>
+                  ) : (
+                    <Link href={item.href} className="flex items-center gap-3">
+                      {item.icon}
+                      <span className="text-sm">{item.name}</span>
+                    </Link>
+                  )}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             );

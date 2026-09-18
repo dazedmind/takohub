@@ -12,11 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Minus, Pen, Plus } from "lucide-react";
+import { Lock, Minus, Pen, Plus } from "lucide-react";
 import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import { useSessionContext } from "@/components/providers/session-provider";
 import { CameraModal } from "@/components/camera-modal";
 import {
+  useActiveShiftQuery,
   useBranchesQuery,
   useCentralInventoryQuery,
   useBranchInventoryQuery,
@@ -85,6 +86,10 @@ export default function InventoryPage() {
   const bsHasActiveShift = branchData?.hasActiveShift;
   const bsBranchName = branchData?.branchName || "";
   const branchItemStock = branchItems.find((i) => i.itemId === adjustItemId)?.currentStock || 0;
+
+  const { data: activeShiftData } = useActiveShiftQuery();
+  const hasActiveShift = !!activeShiftData?.activeShift;
+  const isShiftRequired = (isBS || isIM) && !hasActiveShift;
 
   useEffect(() => {
     if (adjustModalOpen && adjustItemId) {
@@ -192,7 +197,7 @@ export default function InventoryPage() {
         </div>
 
         {/* Actions for IM / Admin */}
-        {!isBS && (
+        {!isBS && !isShiftRequired && (
           <div className="flex items-center gap-2">
             {(isIM || isAdmin) && (
               <Button
@@ -230,29 +235,32 @@ export default function InventoryPage() {
         )}
       </div>
 
-      {/* BRANCH SELLER WITHOUT ACTIVE SHIFT */}
-      {isBS && bsHasActiveShift === false && (
+      {/* LOCKED IF SHIFT REQUIRED BUT NOT ACTIVE */}
+      {isShiftRequired ? (
         <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm text-center py-12">
           <CardContent className="space-y-3">
+            <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6" />
+            </div>
             <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-              Manage Inventory
+              Shift Required
             </h2>
             <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-              Start your shift to access branch inventory.
+              You must start your shift on the dashboard before you can access Inventory.
             </p>
             <Button
+              type="button"
               variant="secondary"
               size="sm"
-              onClick={() => setCameraModalOpen(true)}
+              onClick={() => {
+                window.location.href = "/dashboard";
+              }}
             >
-              Start Shift Now
+              Go to Dashboard to Start Shift
             </Button>
           </CardContent>
         </Card>
-      )}
-
-      {/* BRANCH SELLER WITH ACTIVE SHIFT OR ADMIN/IM VIEW */}
-      {(!isBS || bsHasActiveShift === true) && (
+      ) : (
         <div className="space-y-4">
           {/* Navigation Tabs for IM / Admin */}
           {!isBS && (

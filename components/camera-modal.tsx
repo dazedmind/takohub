@@ -161,7 +161,7 @@ export function CameraModal({
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to start shift");
+        throw new Error(data.message || data.error || "Failed to start shift");
       }
 
       dialog.show({

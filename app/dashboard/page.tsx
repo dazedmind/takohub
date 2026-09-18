@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lock } from "lucide-react";
 import { useSessionContext } from "@/components/providers/session-provider";
 import { formatPeso } from "@/lib/business-logic";
 import { ActiveShiftCard } from "@/components/active-shift-card";
@@ -154,40 +155,70 @@ export default function DashboardHome() {
             )}
 
             {/* Action 2: Manage Orders */}
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col justify-between">
+            <Card className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col justify-between transition-opacity ${!userActiveShift ? "opacity-70" : ""}`}>
               <CardHeader className="pb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                   {isBS ? "Branch Requests" : "Fulfillment Queue"}
                 </span>
-                <CardTitle className="text-lg font-bold">
-                  {isBS ? "Manage Orders" : "Process Orders"}
+                <CardTitle className="text-lg font-bold flex items-center justify-between">
+                  <span>{isBS ? "Manage Orders" : "Process Orders"}</span>
+                  {!userActiveShift && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-zinc-400">
+                      <Lock size={14} /> Locked
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-2">
-                <Link href="/dashboard/orders" className="block w-full">
-                  <Button variant="primary" className="w-full h-11 text-sm font-bold">
-                    {isBS ? "Open Order Basket" : "Open Orders Queue"}
+                {!userActiveShift ? (
+                  <Button
+                    variant="primary"
+                    disabled
+                    className="w-full h-11 text-sm font-bold opacity-50 cursor-not-allowed"
+                  >
+                    Start Shift to Access
                   </Button>
-                </Link>
+                ) : (
+                  <Link href="/dashboard/orders" className="block w-full">
+                    <Button variant="primary" className="w-full h-11 text-sm font-bold">
+                      {isBS ? "Open Order Basket" : "Open Orders Queue"}
+                    </Button>
+                  </Link>
+                )}
               </CardContent>
             </Card>
 
             {/* Action 3: Manage Inventory */}
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col justify-between">
+            <Card className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col justify-between transition-opacity ${!userActiveShift ? "opacity-70" : ""}`}>
               <CardHeader className="pb-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
                   Stock Operations
                 </span>
-                <CardTitle className="text-lg font-bold">
-                  {isBS ? "Manage Inventory" : "Central Inventory"}
+                <CardTitle className="text-lg font-bold flex items-center justify-between">
+                  <span>{isBS ? "Manage Inventory" : "Central Inventory"}</span>
+                  {!userActiveShift && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-zinc-400">
+                      <Lock size={14} /> Locked
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-2">
-                <Link href="/dashboard/inventory" className="block w-full">
-                  <Button variant="tertiary" className="w-full h-11 text-sm font-bold">
-                    {isBS ? "View Branch Stock" : "Manage Warehouse Stock"}
+                {!userActiveShift ? (
+                  <Button
+                    variant="tertiary"
+                    disabled
+                    className="w-full h-11 text-sm font-bold opacity-50 cursor-not-allowed"
+                  >
+                    Start Shift to Access
                   </Button>
-                </Link>
+                ) : (
+                  <Link href="/dashboard/inventory" className="block w-full">
+                    <Button variant="tertiary" className="w-full h-11 text-sm font-bold">
+                      {isBS ? "View Branch Stock" : "Manage Warehouse Stock"}
+                    </Button>
+                  </Link>
+                )}
               </CardContent>
             </Card>
           </div>

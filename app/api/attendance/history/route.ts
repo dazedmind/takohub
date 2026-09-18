@@ -43,8 +43,8 @@ export async function GET(request: Request) {
       .innerJoin(user, eq(sessionLog.userId, user.id))
       .leftJoin(sales, eq(sessionLog.sessionId, sales.sessionId));
 
-    // For BS users, only return their own shift history
-    if (session.role === "BS") {
+    // For BS and IM users, only return their own shift history
+    if (session.role === "BS" || session.role === "IM") {
       if (type === "sales") {
         const records = await baseQuery
           .where(and(eq(sessionLog.userId, session.id), eq(sessionLog.shiftStatus, "COMPLETED")))
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // For ADMIN and IM, return all
+    // For ADMIN, return all
     if (type === "sales") {
       const records = await baseQuery
         .where(eq(sessionLog.shiftStatus, "COMPLETED"))

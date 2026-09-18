@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useSessionContext } from "@/components/providers/session-provider";
 import { formatPeso, formatShortOver } from "@/lib/business-logic";
-import { useBranchesQuery, useSalesQuery } from "@/lib/queries";
+import { useBranchesQuery, useSalesQuery, useActiveShiftQuery } from "@/lib/queries";
+import { Lock } from "lucide-react";
 import type { SessionUser } from "@/lib/types";
 import {
   Dialog,
@@ -24,6 +25,11 @@ export default function SalesPage() {
   const [viewingSale, setViewingSale] = useState<any | null>(null);
 
   const isBS = user?.role === "BS";
+  const isAdmin = user?.role === "ADMIN";
+
+  const { data: activeShiftData } = useActiveShiftQuery();
+  const hasActiveShift = !!activeShiftData?.activeShift;
+  const isShiftRequired = !isAdmin && !hasActiveShift;
 
   const { data: branchesData } = useBranchesQuery();
   const branches = branchesData?.branches || [];
@@ -55,8 +61,35 @@ export default function SalesPage() {
         </p>
       </div>
 
-      {/* Summary Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* LOCKED IF SHIFT REQUIRED BUT NOT ACTIVE */}
+      {isShiftRequired ? (
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm text-center py-12">
+          <CardContent className="space-y-3">
+            <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              Shift Required
+            </h2>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+              You must start your shift on the dashboard before you can access Sales logs.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                window.location.href = "/dashboard";
+              }}
+            >
+              Go to Dashboard to Start Shift
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Summary Metrics Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs font-medium text-zinc-500">Total Revenue</CardTitle>
@@ -253,6 +286,8 @@ export default function SalesPage() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/* Sales Details Dialog */}
       <Dialog open={!!viewingSale} onOpenChange={(open) => !open && setViewingSale(null)}>

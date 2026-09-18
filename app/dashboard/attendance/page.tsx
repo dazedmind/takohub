@@ -5,11 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Eye } from "lucide-react";
+import { Eye, Lock } from "lucide-react";
 import { formatPeso } from "@/lib/business-logic";
 import { SelfieViewDialog } from "@/components/selfie-view-dialog";
 import { useSessionContext } from "@/components/providers/session-provider";
 import {
+  useActiveShiftQuery,
   useAttendanceHistoryQuery,
   useBranchesQuery,
   useUsersQuery,
@@ -39,6 +40,10 @@ export default function AttendancePage() {
   const [previewShift, setPreviewShift] = useState<ActiveEmployeeShift | null>(null);
 
   const isAdmin = user?.role === "ADMIN";
+
+  const { data: activeShiftData } = useActiveShiftQuery();
+  const hasActiveShift = !!activeShiftData?.activeShift;
+  const isShiftRequired = !isAdmin && !hasActiveShift;
 
   const { data: branchesData } = useBranchesQuery();
   const branches = branchesData?.branches || [];
@@ -81,15 +86,44 @@ export default function AttendancePage() {
       {/* Header */}
       <div className="pb-2 border-b border-zinc-200 dark:border-zinc-800">
         <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-          Attendance Records
+          {isAdmin ? "Attendance Records" : "My Attendance Records"}
         </h1>
         <p className="text-xs text-zinc-500">
-          Biometric shift logs, employee selfie proofs, and sales logs.
+          {isAdmin
+            ? "Biometric shift logs, employee selfie proofs, and sales logs."
+            : "Your biometric shift logs, selfie proofs, and shift records."}
         </p>
       </div>
 
-      {/* Attendance Filters */}
-      {isAdmin && (
+      {/* LOCKED IF SHIFT REQUIRED BUT NOT ACTIVE */}
+      {isShiftRequired ? (
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm text-center py-12">
+          <CardContent className="space-y-3">
+            <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
+              <Lock className="w-6 h-6" />
+            </div>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+              Shift Required
+            </h2>
+            <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+              You must start your shift on the dashboard before you can access Attendance records.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                window.location.href = "/dashboard";
+              }}
+            >
+              Go to Dashboard to Start Shift
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Attendance Filters */}
+          {isAdmin && (
         <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
           <CardContent className="p-4">
             <form onSubmit={handleApplyFilters} className="space-y-3">
@@ -328,6 +362,8 @@ export default function AttendancePage() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/* Selfie Preview Lightbox */}
       <SelfieViewDialog

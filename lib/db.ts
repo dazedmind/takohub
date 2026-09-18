@@ -49,4 +49,19 @@ export const db = new Proxy({} as any, {
   }
 });
 
+let sqlInstance: any = null;
+
+export function getSql() {
+  const databaseUrl = typeof process !== "undefined" ? process.env.DATABASE_URL : undefined;
+  if (!databaseUrl) {
+    throw new Error(
+      "DATABASE_URL is not set. Please configure the DATABASE_URL environment variable."
+    );
+  }
+  if (!sqlInstance) {
+    sqlInstance = neon(databaseUrl);
+  }
+  return sqlInstance;
+}
+
 export { schema };
