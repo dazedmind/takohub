@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Eye, Trash2, Lock, RefreshCcw } from "lucide-react";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import { useSessionContext } from "@/components/providers/session-provider";
 import {
@@ -30,6 +31,7 @@ import type {
   SessionUser,
   OrderStatus,
 } from "@/lib/types";
+import { formatPeso } from "@/lib/business-logic";
 
 export default function OrdersPage() {
   const { user } = useSessionContext();
@@ -124,6 +126,7 @@ export default function OrdersPage() {
           itemId: itemObj.itemId,
           itemName: itemObj.itemName,
           unit: itemObj.unit || "pcs",
+          price: itemObj.price ?? 0,
           quantity: qty,
         },
       ];
@@ -198,18 +201,13 @@ export default function OrdersPage() {
       {/* Header */}
       <div className="pb-3 border-b border-zinc-200 dark:border-zinc-800">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-          {isBS ? "Manage Orders" : "Order Fulfillment Pipeline"}
+          {isBS ? "Manage Orders" : "Orders"}
         </h1>
-        <p className="text-sm text-zinc-500 mt-1">
-          {isBS
-            ? "Request inventory supplies from the central warehouse."
-            : "Review and process branch order requests."}
-        </p>
       </div>
 
       {/* LOCKED IF SHIFT REQUIRED BUT NOT ACTIVE */}
       {isShiftRequired ? (
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm text-center py-12">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center py-12">
           <CardContent className="space-y-3">
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
               <Lock className="w-6 h-6" />
@@ -238,9 +236,9 @@ export default function OrdersPage() {
           {isBS && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <div className="lg:col-span-5">
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base font-bold">Select Product</CardTitle>
+                <CardTitle className="text-base font-semibold">Select Product</CardTitle>
                 <CardDescription className="text-sm">
                   Choose item and quantity to add to order
                 </CardDescription>
@@ -292,7 +290,7 @@ export default function OrdersPage() {
                   type="button"
                   variant="primary"
                   onClick={handleAddToBasket}
-                  className="w-full h-10 text-sm font-bold"
+                  className="w-full h-10 text-sm font-semibold"
                 >
                   Add to Basket
                 </Button>
@@ -302,15 +300,15 @@ export default function OrdersPage() {
 
           {/* Order Basket Review */}
           <div className="lg:col-span-7">
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="text-base font-bold">Order Basket</CardTitle>
+                  <CardTitle className="text-base font-semibold">Order Basket</CardTitle>
                   <CardDescription className="text-sm">
                     Items selected for this request
                   </CardDescription>
                 </div>
-                <span className="text-sm font-bold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md">
+                <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md">
                   {orderBasket.length} items
                 </span>
               </CardHeader>
@@ -325,10 +323,10 @@ export default function OrdersPage() {
                       <table className="w-full text-sm">
                         <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 z-10">
                           <tr className="text-left">
-                            <th className="py-2.5 px-3.5 font-bold bg-zinc-50 dark:bg-zinc-900">Item</th>
-                            <th className="py-2.5 px-3.5 font-bold bg-zinc-50 dark:bg-zinc-900">Unit</th>
-                            <th className="py-2.5 px-3.5 font-bold text-center bg-zinc-50 dark:bg-zinc-900">Qty</th>
-                            <th className="py-2.5 px-3.5 text-right font-bold bg-zinc-50 dark:bg-zinc-900">Action</th>
+                            <th className="py-2.5 px-3.5 font-semibold bg-zinc-50 dark:bg-zinc-900">Item</th>
+                            <th className="py-2.5 px-3.5 font-semibold bg-zinc-50 dark:bg-zinc-900">Unit</th>
+                            <th className="py-2.5 px-3.5 font-semibold text-center bg-zinc-50 dark:bg-zinc-900">Qty</th>
+                            <th className="py-2.5 px-3.5 text-right font-semibold bg-zinc-50 dark:bg-zinc-900">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -336,17 +334,20 @@ export default function OrdersPage() {
                             <tr key={item.itemId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
                               <td className="py-2.5 px-3.5 font-medium">{item.itemName}</td>
                               <td className="py-2.5 px-3.5 text-zinc-500">{item.unit}</td>
-                              <td className="py-2.5 px-3.5 text-center font-bold text-base">{item.quantity}</td>
+                              <td className="py-2.5 px-3.5 text-center font-semibold text-base">{item.quantity}</td>
                               <td className="py-2.5 px-3.5 text-right">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="xs"
-                                  onClick={() => handleRemoveFromBasket(item.itemId)}
-                                  className="h-8 text-red-600 hover:text-red-700 gap-1 text-xs"
-                                >
-                                  <Trash2 size={14} />
-                                </Button>
+                                <ActionTooltip label="Remove item">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    onClick={() => handleRemoveFromBasket(item.itemId)}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                    aria-label="Remove item"
+                                  >
+                                    <Trash2 size={14} />
+                                  </Button>
+                                </ActionTooltip>
                               </td>
                             </tr>
                           ))}
@@ -370,7 +371,7 @@ export default function OrdersPage() {
                       variant="secondary"
                       onClick={handleSubmitOrder}
                       disabled={submitOrderMutation.isPending}
-                      className="w-full h-10 text-sm font-bold"
+                      className="w-full h-10 text-sm font-semibold"
                     >
                       {submitOrderMutation.isPending ? "Submitting..." : "Submit Order Request"}
                     </Button>
@@ -385,32 +386,36 @@ export default function OrdersPage() {
       {/* ORDERS LIST */}
       <div className="space-y-4">
         {/* Status Filter Tabs */}
-        <div className="flex flex-wrap gap-1.5 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-          {["ALL", "PENDING", "PROCESSING", "READY", "FULFILLED", "CANCELLED"].map(
-            (tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors ${
-                  activeTab === tab
-                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {tab === "ALL" ? "All" : tab === "READY" ? "FOR DELIVERY" : tab}
-              </button>
-            )
-          )}
-        </div>
-        <div>
-          <Button variant="ghost" onClick={handleRefreshOrders} className="px-4 py-2 text-sm font-bold">
-            <RefreshCcw className="w-4 h-4" />
-          </Button>
+        <div className="flex flex-wrap items-end justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800">
+          <div className="flex flex-wrap items-end gap-1">
+            {["ALL", "PENDING", "PROCESSING", "READY", "FULFILLED", "CANCELLED"].map(
+              (tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3.5 py-2 text-xs uppercase tracking-wider rounded-t-md transition-all -mb-px border-b-2 ${
+                    activeTab === tab
+                      ? "bg-orange-100/80 dark:bg-orange-950/50 text-orange-950 dark:text-orange-100 font-bold border-b-orange-500"
+                      : "border-b-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40 font-medium"
+                  }`}
+                >
+                  {tab === "ALL" ? "All" : tab === "READY" ? "FOR DELIVERY" : tab}
+                </button>
+              )
+            )}
+          </div>
+          <div className="pb-1">
+            <ActionTooltip label="Refresh Orders">
+              <Button variant="ghost" size="icon-sm" onClick={handleRefreshOrders}>
+                <RefreshCcw className="w-3.5 h-3.5" />
+              </Button>
+            </ActionTooltip>
+          </div>
         </div>
 
         {/* Orders Table */}
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
           <CardContent className="p-0">
             {isLoading ? (
               <p className="text-sm text-zinc-500 py-8 text-center">Loading orders...</p>
@@ -423,13 +428,13 @@ export default function OrdersPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                      <th className="py-3 px-4 font-bold">Order ID</th>
-                      <th className="py-3 px-4 font-bold">Branch</th>
-                      <th className="py-3 px-4 font-bold">Requested By</th>
-                      <th className="py-3 px-4 font-bold">Date</th>
-                      <th className="py-3 px-4 font-bold text-center">Items</th>
-                      <th className="py-3 px-4 font-bold">Status</th>
-                      <th className="py-3 px-4 font-bold text-right">Action</th>
+                      <th className="py-3 px-4 font-semibold">Order ID</th>
+                      <th className="py-3 px-4 font-semibold">Branch</th>
+                      <th className="py-3 px-4 font-semibold">Requested By</th>
+                      <th className="py-3 px-4 font-semibold">Date</th>
+                      <th className="py-3 px-4 font-semibold text-center">Items</th>
+                      <th className="py-3 px-4 font-semibold">Status</th>
+                      <th className="py-3 px-4 font-semibold text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -438,7 +443,7 @@ export default function OrdersPage() {
                         key={order.orderId}
                         className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
                       >
-                        <td className="py-3 px-4 font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                        <td className="py-3 px-4 font-mono font-semibold text-zinc-900 dark:text-zinc-100">
                           #{formatOrderIdDisplay(order.orderId, order.createdOn)}
                         </td>
                         <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">{order.branchName}</td>
@@ -451,37 +456,38 @@ export default function OrdersPage() {
                             minute: "2-digit",
                           })}
                         </td>
-                        <td className="py-3 px-4 text-center font-bold">
+                        <td className="py-3 px-4 text-center font-semibold">
                           {order.items?.length || 0}
                         </td>
                         <td className="py-3 px-4">
                           <Badge
                             variant="outline"
-                            className={`text-xs px-2.5 py-0.5 font-bold ${
+                            className={`text-xs px-2.5 py-0.5 font-semibold ${
                               order.status === "PENDING"
-                                ? "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20"
+                                ? "border-amber-500 text-amber-600"
                                 : order.status === "PROCESSING"
-                                ? "border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/20"
+                                ? "border-blue-500 text-blue-600"
                                 : order.status === "READY"
-                                ? "border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-950/20"
+                                ? "border-purple-500 text-purple-600"
                                 : order.status === "FULFILLED"
-                                ? "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
-                                : "border-red-500 text-red-600 bg-red-50 dark:bg-red-950/20"
+                                ? "border-emerald-500 text-emerald-600"
+                                : "border-red-500 text-red-600"
                             }`}
                           >
                             {order.status === "READY" ? "FOR DELIVERY" : order.status}
                           </Badge>
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedOrder(order)}
-                            className="h-8 gap-1.5 text-xs font-semibold"
-                          >
-                            <Eye size={15} />
-                            <span>View</span>
-                          </Button>
+                          <ActionTooltip label="View Order Details">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setSelectedOrder(order)}
+                              aria-label="View Order Details"
+                            >
+                              <Eye size={15} />
+                            </Button>
+                          </ActionTooltip>
                         </td>
                       </tr>
                     ))}
@@ -501,7 +507,7 @@ export default function OrdersPage() {
           {/* FIXED HEADER: Order # & Details (Status, Date, Notes, Fulfilled On) */}
           <div className="p-5 pb-3 flex-shrink-0 border-b border-zinc-200 dark:border-zinc-800 space-y-3">
             <DialogHeader className="p-0 border-0">
-              <DialogTitle className="text-xl font-bold">
+              <DialogTitle className="text-xl font-semibold">
                 Order #{selectedOrder ? formatOrderIdDisplay(selectedOrder.orderId, selectedOrder.createdOn) : ""}
               </DialogTitle>
               <DialogDescription className="text-sm">
@@ -510,21 +516,21 @@ export default function OrdersPage() {
             </DialogHeader>
 
             {selectedOrder && (
-              <div className="space-y-1.5 text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-sm">
+              <div className="space-y-1.5 text-zinc-600 dark:text-zinc-400 dark:border-zinc-800 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Status:</span>
                   <Badge
                     variant="outline"
-                    className={`text-xs px-2.5 py-0.5 font-bold ${
+                    className={`text-xs px-2.5 py-0.5 font-semibold ${
                       selectedOrder.status === "PENDING"
-                        ? "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20"
+                        ? "border-amber-500 text-amber-600"
                         : selectedOrder.status === "PROCESSING"
-                        ? "border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-950/20"
+                        ? "border-blue-500 text-blue-600"
                         : selectedOrder.status === "READY"
-                        ? "border-purple-500 text-purple-600 bg-purple-50 dark:bg-purple-950/20"
+                        ? "border-purple-500 text-purple-600"
                         : selectedOrder.status === "FULFILLED"
-                        ? "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20"
-                        : "border-red-500 text-red-600 bg-red-50 dark:bg-red-950/20"
+                        ? "border-emerald-500 text-emerald-600"
+                        : "border-red-500 text-red-600"
                     }`}
                   >
                     {selectedOrder.status === "READY" ? "FOR DELIVERY" : selectedOrder.status}
@@ -553,106 +559,130 @@ export default function OrdersPage() {
           {/* THE ONLY SCROLLABLE AREA: Items Order */}
           <div className="flex-1 min-h-0 overflow-y-auto p-5">
             <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-zinc-800 dark:text-zinc-200 text-sm">
+              <span className="font-semibold text-zinc-800 dark:text-zinc-200 text-sm">
                 Items Requested
               </span>
               <span className="text-xs font-semibold text-zinc-500">
                 {selectedOrder?.items?.length || 0} items
               </span>
             </div>
-            <div className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
+            <div className=" overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 z-10">
                   <tr className="text-left">
-                    <th className="py-2.5 px-3 font-bold bg-zinc-50 dark:bg-zinc-900">Item</th>
-                    <th className="py-2.5 px-3 font-bold bg-zinc-50 dark:bg-zinc-900 text-center">Qty</th>
-                    <th className="py-2.5 px-3 font-bold bg-zinc-50 dark:bg-zinc-900">Unit</th>
+                    <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900">Item</th>
+                    <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900 text-center">Qty</th>
+                    <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900">Unit</th>
+                    <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900 text-right">Price</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {selectedOrder?.items?.map((item) => (
-                    <tr key={item.itemId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
-                      <td className="py-2.5 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{item.itemName}</td>
-                      <td className="py-2.5 px-3 font-bold text-base text-center">{item.quantity}</td>
-                      <td className="py-2.5 px-3 text-zinc-500">{item.unit}</td>
-                    </tr>
-                  ))}
+                  {selectedOrder?.items?.map((item) => {
+                    const basePrice = Number(item.price) || 0;
+                    const itemTotal = basePrice * (Number(item.quantity) || 0);
+                    return (
+                      <tr key={item.itemId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
+                        <td className="py-2.5 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{item.itemName}</td>
+                        <td className="py-2.5 px-3 font-semibold text-base text-center">{item.quantity}</td>
+                        <td className="py-2.5 px-3 text-zinc-500">{item.unit}</td>
+                        <td className="py-2.5 px-3 text-right">
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            {formatPeso(itemTotal)}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* FIXED FOOTER: Update status button right beside close button, w-fit */}
-          <div className="flex-shrink-0 p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-end gap-2.5">
-            {selectedOrder && (
-              <>
-                {/* Cancel Order (for Admin or Requester if PENDING or READY) */}
-                {(user?.role === "ADMIN" || selectedOrder.orderedBy === user?.id) &&
-                  selectedOrder.status == "PENDING" &&(
+          {/* FIXED FOOTER: Total Amount and Status Workflow Action Buttons */}
+          <div className="flex-shrink-0 p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase font-semibold text-zinc-500 tracking-wider">Total:</span>
+              <span className="text-lg font-extrabold text-zinc-900 dark:text-zinc-100 font-mono">
+                {formatPeso(
+                  selectedOrder?.items?.reduce(
+                    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+                    0
+                  ) || 0
+                )}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="tertiary"
+                onClick={() => setSelectedOrder(null)}
+                className="w-fit text-sm h-9 px-4"
+              >
+                Close
+              </Button>
+              {selectedOrder && (
+                <>
+                  {/* Cancel Order (for Admin or Requester if PENDING or READY) */}
+                  {(user?.role === "ADMIN" || selectedOrder.orderedBy === user?.id) &&
+                    selectedOrder.status == "PENDING" && (
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleUpdateStatus(selectedOrder.orderId, "CANCELLED")}
+                        disabled={updateStatusMutation.isPending}
+                        className="w-fit h-9 text-xs sm:text-sm font-semibold"
+                      >
+                        Cancel Order
+                      </Button>
+                    )}
+
+                  {/* PENDING -> PROCESSING (IM / Admin) */}
+                  {(isIM || isAdmin) && selectedOrder.status === "PENDING" && (
                     <Button
                       type="button"
-                      variant="danger"
+                      variant="primary"
                       size="sm"
-                      onClick={() => handleUpdateStatus(selectedOrder.orderId, "CANCELLED")}
+                      onClick={() => handleUpdateStatus(selectedOrder.orderId, "PROCESSING")}
                       disabled={updateStatusMutation.isPending}
                       className="w-fit h-9 text-xs sm:text-sm font-semibold"
                     >
-                      Cancel Order
+                      Start Processing
                     </Button>
                   )}
 
-                {/* PENDING -> PROCESSING (IM / Admin) */}
-                {(isIM || isAdmin) && selectedOrder.status === "PENDING" && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleUpdateStatus(selectedOrder.orderId, "PROCESSING")}
-                    disabled={updateStatusMutation.isPending}
-                    className="w-fit h-9 text-xs sm:text-sm font-bold"
-                  >
-                    Start Processing
-                  </Button>
-                )}
+                  {/* PROCESSING -> READY / FOR DELIVERY (IM / Admin) */}
+                  {(isIM || isAdmin) && selectedOrder.status === "PROCESSING" && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleUpdateStatus(selectedOrder.orderId, "READY")}
+                      disabled={updateStatusMutation.isPending}
+                      className="w-fit h-9 text-xs sm:text-sm font-semibold"
+                    >
+                      Mark Ready for Delivery
+                    </Button>
+                  )}
 
-                {/* PROCESSING -> READY / FOR DELIVERY (IM / Admin) */}
-                {(isIM || isAdmin) && selectedOrder.status === "PROCESSING" && (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="sm"
-                    onClick={() => handleUpdateStatus(selectedOrder.orderId, "READY")}
-                    disabled={updateStatusMutation.isPending}
-                    className="w-fit h-9 text-xs sm:text-sm font-bold"
-                  >
-                    Mark Ready for Delivery
-                  </Button>
-                )}
+                  {/* READY ("FOR DELIVERY") -> RECEIVE (Store Branch BS view, or Admin) */}
+                  {(isBS || isAdmin) && selectedOrder.status === "READY" && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleUpdateStatus(selectedOrder.orderId, "FULFILLED")}
+                      disabled={updateStatusMutation.isPending}
+                      className="w-fit h-9 text-xs sm:text-sm font-semibold"
+                    >
+                      Receive
+                    </Button>
+                  )}
+                </>
+              )}
 
-                {/* READY ("FOR DELIVERY") -> RECEIVE (Store Branch BS view, or Admin) */}
-                {(isBS || isAdmin) && selectedOrder.status === "READY" && (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handleUpdateStatus(selectedOrder.orderId, "FULFILLED")}
-                    disabled={updateStatusMutation.isPending}
-                    className="w-fit h-9 text-xs sm:text-sm font-bold"
-                  >
-                    Receive
-                  </Button>
-                )}
-              </>
-            )}
-
-            <Button
-              type="button"
-              variant="tertiary"
-              onClick={() => setSelectedOrder(null)}
-              className="w-fit text-sm h-9 px-4"
-            >
-              Close
-            </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -173,10 +173,7 @@ export function SalesLogModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto max-sm:bottom-0 max-sm:top-auto max-sm:left-0 max-sm:right-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:max-w-full max-sm:rounded-t-2xl max-sm:rounded-b-none max-sm:max-h-[92vh] max-sm:pb-6">
-        {/* Drag Handle Indicator for Bottom Sheet (Visible on mobile only) */}
-        <div className="hidden max-sm:block w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto mb-3" />
-
+      <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleEndShift}>
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
@@ -212,29 +209,25 @@ export function SalesLogModal({
               /* BRANCH SELLER VIEW: PLATES & SALES LOG */
               <div className="space-y-5 text-sm">
                 {/* Autocomputed Summary (2-column layout) */}
-                <div className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 space-y-3">
-                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                    Autocomputed Shift Metrics
-                  </h4>
-                  
+                <div className="space-y-3">              
                   <div className="grid grid-cols-2 gap-3">
                     <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
                       <span className="text-[11px] text-zinc-500 block font-semibold">Total Plates Sold</span>
-                      <span className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                      <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
                         {totalPlatesSold} plates
                       </span>
                     </div>
 
                     <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
                       <span className="text-[11px] text-zinc-500 block font-semibold">Sales Revenue</span>
-                      <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+                      <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                         {formatPeso(totalSales)}
                       </span>
                     </div>
 
                     <div className="bg-white dark:bg-zinc-900 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 col-span-2">
-                      <span className="text-[11px] text-zinc-500 block font-semibold">Calculated Shift Salary</span>
-                      <span className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                      <span className="text-[11px] text-zinc-500 block font-semibold">Your Salary</span>
+                      <span className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
                         {formatPeso(calculatedSalary)}
                       </span>
                     </div>
@@ -243,7 +236,7 @@ export function SalesLogModal({
 
                 {/* Plates Sold (1-column layout) */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold uppercase text-zinc-700 dark:text-zinc-300 tracking-wider">
+                  <h3 className="text-sm font-bold uppercase text-yellow-600 dark:text-zinc-300 tracking-wider">
                     Plates Sold
                   </h3>
 
@@ -257,7 +250,7 @@ export function SalesLogModal({
                         min={0}
                         value={cheese}
                         onChange={(e) => setCheese(e.target.value)}
-                        className="font-bold text-base text-center h-11"
+                        className="font-semibold text-base text-center h-11"
                       />
                     </div>
 
@@ -270,7 +263,7 @@ export function SalesLogModal({
                         min={0}
                         value={octobits}
                         onChange={(e) => setOctobits(e.target.value)}
-                        className="font-bold text-base text-center h-11"
+                        className="font-semibold text-base text-center h-11"
                       />
                     </div>
 
@@ -283,17 +276,15 @@ export function SalesLogModal({
                         min={0}
                         value={crab}
                         onChange={(e) => setCrab(e.target.value)}
-                        className="font-bold text-base text-center h-11"
+                        className="font-semibold text-base text-center h-11"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-zinc-200 dark:border-zinc-800" />
-
                 {/* Cash & Operations (1-column layout) */}
                 <div className="space-y-3">
-                  <h3 className="text-sm font-bold uppercase text-zinc-700 dark:text-zinc-300 tracking-wider">
+                  <h3 className="text-sm font-bold uppercase text-yellow-600 dark:text-zinc-300 tracking-wider">
                     Operations
                   </h3>
 
@@ -368,7 +359,7 @@ export function SalesLogModal({
                         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                           Short
                         </label>
-                        <span className="text-red-500 font-black text-xl mr-2">-</span>
+                        <span className="text-red-500 font-bold text-xl mr-2">-</span>
                       </div>
                       <div className="relative w-1/3">
                         <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
@@ -387,7 +378,7 @@ export function SalesLogModal({
                         <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                           Over
                         </label>
-                        <span className="text-emerald-500 font-black text-xl mr-2">+</span>
+                        <span className="text-emerald-500 font-bold text-xl mr-2">+</span>
                       </div>
                       <div className="relative w-1/3">
                         <span className="absolute left-3 top-2.5 text-zinc-400 text-sm">₱</span>
@@ -454,7 +445,7 @@ export function SalesLogModal({
               type="submit"
               variant="danger"
               disabled={!isValid || isSubmitting}
-              className="h-10 text-sm font-bold"
+              className="h-10 text-sm font-semibold"
             >
               {isSubmitting ? "Submitting..." : "End Current Shift"}
             </Button>

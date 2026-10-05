@@ -50,6 +50,18 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const body = (await request.json()) as UpdateInventoryInput;
 
+  if (body.itemName !== undefined && !body.itemName.trim()) {
+    return NextResponse.json({ error: "Item name cannot be empty" }, { status: 400 });
+  }
+
+  if (body.unit !== undefined && !body.unit.trim()) {
+    return NextResponse.json({ error: "Unit cannot be empty" }, { status: 400 });
+  }
+
+  if (body.price !== undefined && (isNaN(Number(body.price)) || Number(body.price) < 0)) {
+    return NextResponse.json({ error: "Price must be a valid non-negative number" }, { status: 400 });
+  }
+
   const [existing] = await db
     .select()
     .from(inventoryItems)
@@ -66,7 +78,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     .update(inventoryItems)
     .set({
       ...(body.itemName !== undefined && { itemName: body.itemName.trim() }),
-      ...(body.unit !== undefined && { unit: body.unit.trim() || null }),
+      ...(body.unit !== undefined && { unit: body.unit.trim() }),
+      ...(body.price !== undefined && { price: Math.max(0, Math.round(Number(body.price))) }),
       ...(body.centralStock !== undefined && { centralStock: body.centralStock }),
       ...(body.photoUrl !== undefined && { photoUrl: body.photoUrl.trim() || null }),
       status,

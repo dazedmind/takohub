@@ -66,9 +66,9 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
     <DialogContext.Provider value={{ show, hide }}>
       {children}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="w-[calc(100%-2rem)] max-w-xs py-12 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 shadow-xl rounded-xl animate-in zoom-in-95 fade-in duration-200">
+        <DialogContent className="w-[calc(100%-2rem)] max-w-xs py-10 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 rounded-xl">
           {/* <DialogHeader className="text-center flex flex-col items-center justify-center">
-            <DialogTitle className={`text-2xl font-bold text-center w-full ${
+            <DialogTitle className={`text-2xl font-semibold text-center w-full ${
               options.type === "success"
                 ? "text-emerald-600 dark:text-emerald-400"
                 : options.type === "error"
@@ -85,19 +85,19 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
             <h2 className="font-semibold text-2xl">{options.title}</h2>
             <p className="py-2 text-base leading-tight text-center text-zinc-600 dark:text-zinc-400">{options.message}</p>
           </div>
-            <Button
-              type="button"
-              variant={options.type === "success" ? "primary" : "secondary"}
-              onClick={() => {
-                setIsOpen(false);
-                if (options.onConfirm) {
-                  options.onConfirm();
-                }
-              }}
-              className="h-10 text-sm font-bold mx-auto"
-            >
-              {options.confirmText}
-            </Button>
+          <Button
+            type="button"
+            variant={options.type === "success" ? "primary" : "secondary"}
+            onClick={() => {
+              setIsOpen(false);
+              if (options.onConfirm) {
+                options.onConfirm();
+              }
+            }}
+            className="h-10 text-sm font-semibold mx-auto"
+          >
+            {options.confirmText}
+          </Button>
         </DialogContent>
       </Dialog>
     </DialogContext.Provider>

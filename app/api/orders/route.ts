@@ -1,6 +1,6 @@
 import { db } from "../../../lib/db";
 import { eq, desc } from "drizzle-orm";
-import { orders, branches } from "../../db/schema";
+import { orders, branches, inventoryItems } from "../../db/schema";
 import { user } from "../../db/auth-schema";
 import { requireAuth } from "../../../lib/auth-utils";
 
@@ -37,7 +37,35 @@ export async function GET(request: Request) {
       results = await query;
     }
 
-    return Response.json(results);
+    const itemRecords = await db
+      .select({
+        itemId: inventoryItems.itemId,
+        price: inventoryItems.price,
+      })
+      .from(inventoryItems);
+
+    const priceMap = new Map<number, number>();
+    for (const item of itemRecords) {
+      priceMap.set(item.itemId, item.price ?? 0);
+    }
+
+    const enrichedResults = results.map((ord: any) => {
+      const list = Array.isArray(ord.orderList) ? ord.orderList : [];
+      const items = list.map((item: any) => ({
+        ...item,
+        price:
+          item.price !== undefined && item.price !== null
+            ? Number(item.price)
+            : (priceMap.get(Number(item.itemId)) ?? 0),
+      }));
+      return {
+        ...ord,
+        orderList: items,
+        items,
+      };
+    });
+
+    return Response.json(enrichedResults);
   } catch (error: any) {
     return Response.json({ message: error.message || "Unauthorized" }, { status: 401 });
   }
@@ -53,13 +81,33 @@ export async function POST(request: Request) {
       return Response.json({ message: "Branch ID and order list are required" }, { status: 400 });
     }
 
+    const itemRecords = await db
+      .select({
+        itemId: inventoryItems.itemId,
+        price: inventoryItems.price,
+      })
+      .from(inventoryItems);
+
+    const priceMap = new Map<number, number>();
+    for (const item of itemRecords) {
+      priceMap.set(item.itemId, item.price ?? 0);
+    }
+
+    const savedOrderList = targetOrderList.map((item: any) => ({
+      ...item,
+      price:
+        item.price !== undefined && item.price !== null
+          ? Number(item.price)
+          : (priceMap.get(Number(item.itemId)) ?? 0),
+    }));
+
     const [newOrder] = await db
       .insert(orders)
       .values({
         branchId: parseInt(branchId, 10),
         orderedBy: session.id,
         status: "PENDING",
-        orderList: targetOrderList,
+        orderList: savedOrderList,
         notes: notes || "",
       })
       .returning();

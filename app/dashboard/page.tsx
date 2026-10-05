@@ -108,14 +108,14 @@ export default function DashboardHome() {
     <div className="space-y-6">
       {/* Header & User Info */}
       <div className="space-y-1 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-          Welcome back, {user?.name?.split(" ")[0] || "User"}
+        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          Welcome back, <span className="font-bold"> {user?.name?.split(" ")[0] || "User"} </span>
         </h1>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-sm text-zinc-600 dark:text-zinc-400">
           {userActiveShift && (
             <div>
               <span className="text-zinc-400">Branch: </span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                 {userActiveShift.branchName}
               </span>
             </div>
@@ -129,18 +129,18 @@ export default function DashboardHome() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Action 1: Start Shift or Active Shift */}
             {!userActiveShift ? (
-              <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col justify-between">
+              <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between">
                 <CardHeader className="pb-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                     Attendance
                   </span>
-                  <CardTitle className="text-lg font-bold">Start Shift</CardTitle>
+                  <CardTitle className="text-lg font-semibold">Start Shift</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-2">
                   <Button
                     variant="secondary"
                     onClick={() => setCameraModalOpen(true)}
-                    className="w-full h-11 text-sm font-bold"
+                    className="w-full h-11 text-sm font-semibold"
                   >
                     Start Shift
                   </Button>
@@ -155,12 +155,12 @@ export default function DashboardHome() {
             )}
 
             {/* Action 2: Manage Orders */}
-            <Card className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col justify-between transition-opacity ${!userActiveShift ? "opacity-70" : ""}`}>
+            <Card className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between transition-opacity ${!userActiveShift ? "opacity-70" : ""}`}>
               <CardHeader className="pb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   {isBS ? "Branch Requests" : "Fulfillment Queue"}
                 </span>
-                <CardTitle className="text-lg font-bold flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold flex items-center justify-between">
                   <span>{isBS ? "Manage Orders" : "Process Orders"}</span>
                   {!userActiveShift && (
                     <span className="flex items-center gap-1 text-xs font-medium text-zinc-400">
@@ -174,13 +174,13 @@ export default function DashboardHome() {
                   <Button
                     variant="primary"
                     disabled
-                    className="w-full h-11 text-sm font-bold opacity-50 cursor-not-allowed"
+                    className="w-full h-11 text-sm font-semibold opacity-50 cursor-not-allowed"
                   >
                     Start Shift to Access
                   </Button>
                 ) : (
                   <Link href="/dashboard/orders" className="block w-full">
-                    <Button variant="primary" className="w-full h-11 text-sm font-bold">
+                    <Button variant="primary" className="w-full h-11 text-sm font-semibold">
                       {isBS ? "Open Order Basket" : "Open Orders Queue"}
                     </Button>
                   </Link>
@@ -189,12 +189,12 @@ export default function DashboardHome() {
             </Card>
 
             {/* Action 3: Manage Inventory */}
-            <Card className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col justify-between transition-opacity ${!userActiveShift ? "opacity-70" : ""}`}>
+            <Card className={`border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col justify-between transition-opacity ${!userActiveShift ? "opacity-70" : ""}`}>
               <CardHeader className="pb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Stock Operations
                 </span>
-                <CardTitle className="text-lg font-bold flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold flex items-center justify-between">
                   <span>{isBS ? "Manage Inventory" : "Central Inventory"}</span>
                   {!userActiveShift && (
                     <span className="flex items-center gap-1 text-xs font-medium text-zinc-400">
@@ -208,13 +208,13 @@ export default function DashboardHome() {
                   <Button
                     variant="tertiary"
                     disabled
-                    className="w-full h-11 text-sm font-bold opacity-50 cursor-not-allowed"
+                    className="w-full h-11 text-sm font-semibold opacity-50 cursor-not-allowed"
                   >
                     Start Shift to Access
                   </Button>
                 ) : (
                   <Link href="/dashboard/inventory" className="block w-full">
-                    <Button variant="tertiary" className="w-full h-11 text-sm font-bold">
+                    <Button variant="tertiary" className="w-full h-11 text-sm font-semibold">
                       {isBS ? "View Branch Stock" : "Manage Warehouse Stock"}
                     </Button>
                   </Link>
@@ -230,12 +230,12 @@ export default function DashboardHome() {
         <div className="space-y-6">
           {/* Key Metrics Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">Today&apos;s Gross</CardTitle>
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Today&apos;s Gross</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+                <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                   {formatPeso(stats?.dailyGross ?? stats?.dailyRevenue ?? 0)}
                 </div>
                 <p className="text-xs text-zinc-500 mt-1 font-medium">
@@ -244,48 +244,48 @@ export default function DashboardHome() {
               </CardContent>
             </Card>
 
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">Today&apos;s Net</CardTitle>
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Today&apos;s Net</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+                <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                   {formatPeso(stats?.dailyNet ?? stats?.dailyRevenue ?? 0)}
                 </div>
                 <p className="text-xs text-zinc-500 mt-1 font-medium">After EOD deductions</p>
               </CardContent>
             </Card>
 
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">Active Employees</CardTitle>
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Active Employees</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+                <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                   {realtimeActiveCount ?? stats?.activeEmployeesCount ?? 0}
                 </div>
                 <p className="text-xs text-zinc-500 mt-1 font-medium">Currently on shift</p>
               </CardContent>
             </Card>
 
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">Pending Orders</CardTitle>
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Pending Orders</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+                <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                   {stats?.pendingOrders ?? 0}
                 </div>
                 <p className="text-xs text-zinc-500 mt-1 font-medium">Awaiting fulfillment</p>
               </CardContent>
             </Card>
 
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <CardHeader className="pb-1 pt-4 px-4">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-zinc-500">Total Branches</CardTitle>
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Total Branches</CardTitle>
               </CardHeader>
               <CardContent className="px-4 pb-4">
-                <div className="text-2xl font-black text-zinc-900 dark:text-zinc-100">
+                <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                   {stats?.totalBranches ?? 0}
                 </div>
                 <p className="text-xs text-zinc-500 mt-1 font-medium">
@@ -296,10 +296,10 @@ export default function DashboardHome() {
           </div>
 
           {/* Active Employees Shift Monitoring */}
-          <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+          <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <div>
-                <CardTitle className="text-base font-bold">Active Employee Shifts</CardTitle>
+                <CardTitle className="text-base font-semibold">Active Employee Shifts</CardTitle>
                 <CardDescription className="text-sm">
                   Employees currently working across branches with dynamic running time.
                 </CardDescription>
@@ -332,9 +332,9 @@ export default function DashboardHome() {
 
           {/* Activity & Low Stock */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <CardHeader className="pb-2">
-                <CardTitle className="text-base font-bold">Recent Activity</CardTitle>
+                <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 {stats?.recentActivity && stats.recentActivity.length > 0 ? (
@@ -360,9 +360,9 @@ export default function DashboardHome() {
               </CardContent>
             </Card>
 
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base font-bold">Central Low Stock</CardTitle>
+                <CardTitle className="text-base font-semibold">Central Low Stock</CardTitle>
                 <Link href="/dashboard/inventory">
                   <Button variant="tertiary" size="sm" className="h-8 text-xs font-semibold">
                     Inventory
@@ -378,7 +378,7 @@ export default function DashboardHome() {
                         className="flex items-center justify-between py-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0"
                       >
                         <span className="font-medium">{item.itemName}</span>
-                        <span className="font-bold text-red-600 dark:text-red-400 text-sm">
+                        <span className="font-semibold text-red-600 dark:text-red-400 text-sm">
                           {item.centralStock} {item.unit || "pcs"} left
                         </span>
                       </div>

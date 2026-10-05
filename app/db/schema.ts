@@ -25,6 +25,7 @@ export const branches = pgTable("branches", {
 export const inventoryItems = pgTable("inventory_items", {
   itemId: serial("item_id").primaryKey(),
   itemName: text("item_name").notNull(),
+  price: integer("item_price").default(0).notNull(),
   unit: text("unit").default("pcs").notNull(),
   centralStock: integer("central_stock").default(0).notNull(),
   status: stockStatusEnum("status").default("OUT_OF_STOCK").notNull(),

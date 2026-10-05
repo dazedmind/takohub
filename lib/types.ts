@@ -89,6 +89,7 @@ export interface OrderBasketItem {
   itemName: string;
   unit: string;
   quantity: number;
+  price?: number;
 }
 
 export interface OrderWithDetails extends Order {
@@ -210,6 +211,7 @@ export interface UpdateBranchInput {
 
 export interface CreateInventoryInput {
   itemName: string;
+  price?: number;
   unit?: string;
   centralStock?: number;
   status?: StockStatus;
@@ -218,8 +220,10 @@ export interface CreateInventoryInput {
 
 export interface UpdateInventoryInput {
   itemName?: string;
+  price?: number;
   unit?: string;
   centralStock?: number;
   status?: StockStatus;
   photoUrl?: string;
 }
+

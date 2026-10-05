@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useSessionContext } from "@/components/providers/session-provider";
 import { formatPeso, formatShortOver } from "@/lib/business-logic";
 import { useBranchesQuery, useSalesQuery, useActiveShiftQuery } from "@/lib/queries";
-import { Lock } from "lucide-react";
+import { Eye, Lock } from "lucide-react";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import type { SessionUser } from "@/lib/types";
 import {
   Dialog,
@@ -53,17 +55,14 @@ export default function SalesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="pb-2 border-b border-zinc-200 dark:border-zinc-800">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
           {isBS ? "My Sales Logs" : "Sales Records"}
         </h1>
-        <p className="text-xs text-zinc-500">
-          Historical plate sales, revenue breakdown, and calculated staff salary.
-        </p>
       </div>
 
       {/* LOCKED IF SHIFT REQUIRED BUT NOT ACTIVE */}
       {isShiftRequired ? (
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm text-center py-12">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center py-12">
           <CardContent className="space-y-3">
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
               <Lock className="w-6 h-6" />
@@ -90,48 +89,48 @@ export default function SalesPage() {
         <>
           {/* Summary Metrics Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs font-medium text-zinc-500">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               {formatPeso(summary.totalRevenue)}
             </div>
             <p className="text-[11px] text-zinc-500 mt-0.5">{summary.recordCount} completed shifts</p>
           </CardContent>
         </Card>
 
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs font-medium text-zinc-500">Total Plates Sold</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               {summary.totalPlates}
             </div>
             <p className="text-[11px] text-zinc-500 mt-0.5">Cheese, Octobits & Crab</p>
           </CardContent>
         </Card>
 
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs font-medium text-zinc-500">Total Salary</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               {formatPeso(summary.totalSalary)}
             </div>
             <p className="text-[11px] text-zinc-500 mt-0.5">Salary matrix payouts</p>
           </CardContent>
         </Card>
 
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs font-medium text-zinc-500">Total Expenses</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
-            <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               {formatPeso(summary.totalExpenses)}
             </div>
             <p className="text-[11px] text-zinc-500 mt-0.5">Branch disbursements</p>
@@ -140,7 +139,7 @@ export default function SalesPage() {
       </div>
 
       {/* Filter Bar */}
-      <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+      <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         <CardContent className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             {!isBS && (
@@ -163,20 +162,20 @@ export default function SalesPage() {
 
             <div>
               <label className="text-zinc-500 block mb-1">Start Date</label>
-              <Input
-                type="date"
+              <DatePicker
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={setStartDate}
+                placeholder="Start date"
                 className="h-9 text-xs"
               />
             </div>
 
             <div>
               <label className="text-zinc-500 block mb-1">End Date</label>
-              <Input
-                type="date"
+              <DatePicker
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={setEndDate}
+                placeholder="End date"
                 className="h-9 text-xs"
               />
             </div>
@@ -185,7 +184,7 @@ export default function SalesPage() {
       </Card>
 
       {/* Sales Table */}
-      <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+      <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
             <p className="text-xs text-zinc-500 py-6 text-center">Loading sales logs...</p>
@@ -196,19 +195,19 @@ export default function SalesPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                    <th className="py-3 px-4 font-bold">Date</th>
-                    <th className="py-3 px-4 font-bold">Branch</th>
-                    <th className="py-3 px-4 font-bold">Seller</th>
-                    <th className="py-3 px-4 font-bold text-center">Plates (Ch/Oct/Cr)</th>
-                    <th className="py-3 px-4 font-bold text-center">Total Plates</th>
-                    <th className="py-3 px-4 font-bold text-right">Total Sales (Gross)</th>
-                    {/* <th className="py-3 px-4 font-bold text-right">Gross</th> */}
-                    <th className="py-3 px-4 font-bold text-right">Net</th>
-                    <th className="py-3 px-4 font-bold text-right">Salary</th>
-                    <th className="py-3 px-4 font-bold text-right">Cash / GCash</th>
-                    <th className="py-3 px-4 font-bold text-center">Short / Over</th>
-                    <th className="py-3 px-4 font-bold">Notes</th>
-                    <th className="py-3 px-4 font-bold text-center">Actions</th>
+                    <th className="py-3 px-4 font-semibold">Date</th>
+                    <th className="py-3 px-4 font-semibold">Branch</th>
+                    <th className="py-3 px-4 font-semibold">Seller</th>
+                    <th className="py-3 px-4 font-semibold text-center">Plates (Ch/Oct/Cr)</th>
+                    <th className="py-3 px-4 font-semibold text-center">Total Plates</th>
+                    <th className="py-3 px-4 font-semibold text-right">Total Sales (Gross)</th>
+                    {/* <th className="py-3 px-4 font-semibold text-right">Gross</th> */}
+                    <th className="py-3 px-4 font-semibold text-right">Net</th>
+                    <th className="py-3 px-4 font-semibold text-right">Salary</th>
+                    <th className="py-3 px-4 font-semibold text-right">Cash / GCash</th>
+                    <th className="py-3 px-4 font-semibold text-center">Short / Over</th>
+                    <th className="py-3 px-4 font-semibold">Notes</th>
+                    <th className="py-3 px-4 font-semibold text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -227,22 +226,22 @@ export default function SalesPage() {
                           })}
                         </td>
                         <td className="py-3 px-4 font-semibold">{s.branchName}</td>
-                        <td className="py-3 px-4 text-zinc-900 dark:text-zinc-100 font-bold">
+                        <td className="py-3 px-4 text-zinc-900 dark:text-zinc-100 font-semibold">
                           {s.userName}
                         </td>
                         <td className="py-3 px-4 text-center text-zinc-600 dark:text-zinc-400 font-mono">
                           {s.cheese} / {s.octobits} / {s.crab}
                         </td>
-                        <td className="py-3 px-4 text-center font-bold text-zinc-900 dark:text-zinc-100 text-base">
+                        <td className="py-3 px-4 text-center font-semibold text-zinc-900 dark:text-zinc-100 text-base">
                           {s.totalPlates}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-zinc-900 dark:text-zinc-100">
+                        <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100">
                           {formatPeso(s.totalSales)}
                         </td>
-                        {/* <td className="py-3 px-4 text-right font-bold text-zinc-900 dark:text-zinc-100 font-mono">
+                        {/* <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
                           {formatPeso(s.grossSales ?? s.totalSales)}
                         </td> */}
-                        <td className="py-3 px-4 text-right font-bold text-zinc-900 dark:text-zinc-100 font-mono">
+                        <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
                           {formatPeso(s.netSales ?? (s.totalSales - s.expenses - (s.free || 0) - (s.shortOver || 0) - (Number(s.trashLeftover) || 0)))}
                         </td>
                         <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100">
@@ -255,9 +254,9 @@ export default function SalesPage() {
                           <span
                             className={
                               shortOverInfo.type === "SHORT"
-                                ? "text-red-600 font-bold"
+                                ? "text-red-600 font-semibold"
                                : shortOverInfo.type === "OVER"
-                                ? "text-emerald-600 font-bold"
+                                ? "text-emerald-600 font-semibold"
                                 : "text-zinc-400 font-medium"
                             }
                           >
@@ -268,14 +267,17 @@ export default function SalesPage() {
                           {s.remarks || s.trashLeftover || "—"}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => setViewingSale(s)}
-                            className="h-7 px-3 text-[11px] font-bold"
-                          >
-                            View
-                          </Button>
+                          <ActionTooltip label="View Sales Details">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => setViewingSale(s)}
+                              aria-label="View Sales Details"
+                            >
+                              <Eye size={15} />
+                            </Button>
+                          </ActionTooltip>
                         </td>
                       </tr>
                     );
@@ -291,9 +293,9 @@ export default function SalesPage() {
 
       {/* Sales Details Dialog */}
       <Dialog open={!!viewingSale} onOpenChange={(open) => !open && setViewingSale(null)}>
-        <DialogContent className="sm:max-w-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-6 shadow-xl rounded-xl">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+            <DialogTitle className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               Sales Log Details
             </DialogTitle>
           </DialogHeader>
@@ -331,15 +333,15 @@ export default function SalesPage() {
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
                     <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
                       <span className="text-zinc-500 block">Cheese</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.cheese}</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.cheese}</span>
                     </div>
                     <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
                       <span className="text-zinc-500 block">Octobits</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.octobits}</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.octobits}</span>
                     </div>
                     <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
                       <span className="text-zinc-500 block">Crab</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.crab}</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-sm">{viewingSale.crab}</span>
                     </div>
                   </div>
                   <div className="flex justify-between text-xs font-semibold py-1 px-2 bg-zinc-100 dark:bg-zinc-800 rounded">
@@ -374,7 +376,7 @@ export default function SalesPage() {
                     <span className="text-zinc-500">Trash / Left Over</span>
                     <span className="font-mono text-zinc-600">-{formatPeso(Number(viewingSale.trashLeftover) || 0)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-zinc-100 dark:border-zinc-800 pt-1.5 font-bold text-sm">
+                  <div className="flex justify-between border-t border-zinc-100 dark:border-zinc-800 pt-1.5 font-semibold text-sm">
                     <span className="text-zinc-800 dark:text-zinc-200">Net Sales</span>
                     <span className="font-mono text-zinc-900 dark:text-zinc-100">
                       {formatPeso(viewingSale.netSales ?? (viewingSale.totalSales - viewingSale.expenses - (viewingSale.free || 0) - (viewingSale.shortOver || 0) - (Number(viewingSale.trashLeftover) || 0)))}
@@ -390,16 +392,16 @@ export default function SalesPage() {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
                       <span className="text-zinc-500 block">Cash on Hand</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.cashOnhand)}</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.cashOnhand)}</span>
                     </div>
                     <div className="bg-zinc-50 dark:bg-zinc-900 p-2 rounded border border-zinc-100 dark:border-zinc-800">
                       <span className="text-zinc-500 block">GCash Payment</span>
-                      <span className="font-bold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.gcashPayment)}</span>
+                      <span className="font-semibold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.gcashPayment)}</span>
                     </div>
                   </div>
                   <div className="flex justify-between text-xs py-1 px-2 border border-zinc-100 dark:border-zinc-800 rounded">
                     <span className="text-zinc-500">Calculated Salary</span>
-                    <span className="font-bold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.salary)}</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 font-mono">{formatPeso(viewingSale.salary)}</span>
                   </div>
                 </div>
               )}
@@ -420,7 +422,7 @@ export default function SalesPage() {
               type="button"
               variant="secondary"
               onClick={() => setViewingSale(null)}
-              className="h-10 text-sm font-bold min-w-[100px] mx-auto animate-in zoom-in-95 duration-200"
+              className="h-10 text-sm font-semibold min-w-[100px] mx-auto"
             >
               Close
             </Button>

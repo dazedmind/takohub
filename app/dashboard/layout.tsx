@@ -45,14 +45,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <header className="flex md:hidden items-center justify-between h-14 px-4 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shrink-0 z-30">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="h-10 w-10 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800" />
-              <div className="flex items-center gap-2 font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                <span className="w-6 h-6 rounded bg-[#F4D671] text-[#1C1C1C] flex items-center justify-center text-xs font-black">
-                  T
-                </span>
-                <span className="text-base">TakoHub</span>
+              <div className="flex items-center gap-2 font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+                <span className="text-base font-bold">TakoHub</span>
               </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-[#F4D671] text-[#1C1C1C] font-bold text-sm flex items-center justify-center border border-[#ebd060]">
+            <div className="w-8 h-8 rounded-full bg-[#F4D671] text-[#1C1C1C] font-semibold text-sm flex items-center justify-center border border-[#ebd060]">
               {userInitial}
             </div>
           </header>

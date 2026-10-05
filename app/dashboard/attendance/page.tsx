@@ -5,7 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Eye, Lock } from "lucide-react";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import { formatPeso } from "@/lib/business-logic";
 import { SelfieViewDialog } from "@/components/selfie-view-dialog";
 import { useSessionContext } from "@/components/providers/session-provider";
@@ -85,19 +87,14 @@ export default function AttendancePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="pb-2 border-b border-zinc-200 dark:border-zinc-800">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
           {isAdmin ? "Attendance Records" : "My Attendance Records"}
         </h1>
-        <p className="text-xs text-zinc-500">
-          {isAdmin
-            ? "Biometric shift logs, employee selfie proofs, and sales logs."
-            : "Your biometric shift logs, selfie proofs, and shift records."}
-        </p>
       </div>
 
       {/* LOCKED IF SHIFT REQUIRED BUT NOT ACTIVE */}
       {isShiftRequired ? (
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm text-center py-12">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center py-12">
           <CardContent className="space-y-3">
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
               <Lock className="w-6 h-6" />
@@ -124,17 +121,17 @@ export default function AttendancePage() {
         <>
           {/* Attendance Filters */}
           {isAdmin && (
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <CardContent className="p-4">
             <form onSubmit={handleApplyFilters} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
                 {/* Date */}
                 <div>
                   <label className="text-xs text-zinc-500 block mb-1">Date</label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={filterDate}
-                    onChange={(e) => setFilterDate(e.target.value)}
+                    onChange={setFilterDate}
+                    placeholder="Select date"
                     className="h-9 text-xs"
                   />
                 </div>
@@ -228,7 +225,7 @@ export default function AttendancePage() {
       )}
 
       {/* Attendance Records Table */}
-      <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+      <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
             <p className="text-xs text-zinc-500 py-6 text-center">Loading records...</p>
@@ -241,15 +238,15 @@ export default function AttendancePage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                    <th className="py-3 px-4 font-bold">Employee</th>
-                    <th className="py-3 px-4 font-bold">Branch</th>
-                    <th className="py-3 px-4 font-bold">Shift Start</th>
-                    <th className="py-3 px-4 font-bold">Shift End</th>
-                    <th className="py-3 px-4 font-bold text-center">Duration</th>
-                    <th className="py-3 px-4 font-bold">Status</th>
-                    <th className="py-3 px-4 font-bold text-center">Plates</th>
-                    <th className="py-3 px-4 font-bold text-right">Sales / Salary</th>
-                    <th className="py-3 px-4 font-bold text-right">Selfie Proof</th>
+                    <th className="py-3 px-4 font-semibold">Employee</th>
+                    <th className="py-3 px-4 font-semibold">Branch</th>
+                    <th className="py-3 px-4 font-semibold">Shift Start</th>
+                    <th className="py-3 px-4 font-semibold">Shift End</th>
+                    <th className="py-3 px-4 font-semibold text-center">Duration</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold text-center">Plates</th>
+                    <th className="py-3 px-4 font-semibold text-right">Sales / Salary</th>
+                    <th className="py-3 px-4 font-semibold text-right">Selfie Proof</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -263,11 +260,11 @@ export default function AttendancePage() {
                         {/* Employee with Avatar on first column */}
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-full bg-[#F4D671] text-[#1C1C1C] font-bold text-sm flex items-center justify-center shrink-0 shadow-2xs border border-[#ebd060]">
+                            <div className="w-8 h-8 rounded-full bg-[#F4D671] text-[#1C1C1C] font-semibold text-sm flex items-center justify-center shrink-0">
                               {empInitial}
                             </div>
                             <div>
-                              <div className="font-bold text-zinc-900 dark:text-zinc-100">
+                              <div className="font-semibold text-zinc-900 dark:text-zinc-100">
                                 {rec.userName}
                               </div>
                               <div className="text-xs text-zinc-500 font-semibold">{rec.role}</div>
@@ -293,7 +290,7 @@ export default function AttendancePage() {
                               })
                             : "—"}
                         </td>
-                        <td className="py-3 px-4 text-center font-mono text-zinc-600 dark:text-zinc-400 font-bold">
+                        <td className="py-3 px-4 text-center font-mono text-zinc-600 dark:text-zinc-400 font-semibold">
                           {formatDuration(rec.durationMinutes)}
                         </td>
                         <td className="py-3 px-4">
@@ -301,20 +298,20 @@ export default function AttendancePage() {
                             variant="outline"
                             className={
                               rec.shiftStatus === "ACTIVE"
-                                ? "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 text-xs px-2.5 py-0.5 font-bold"
-                                : "border-zinc-300 text-zinc-500 bg-zinc-50 dark:bg-zinc-900/50 text-xs px-2.5 py-0.5 font-bold"
+                                ? "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 text-xs px-2.5 py-0.5 font-semibold"
+                                : "border-zinc-300 text-zinc-500 bg-zinc-50 dark:bg-zinc-900/50 text-xs px-2.5 py-0.5 font-semibold"
                             }
                           >
                             {rec.shiftStatus}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4 text-center font-bold text-zinc-900 dark:text-zinc-100 text-base">
+                        <td className="py-3 px-4 text-center font-semibold text-zinc-900 dark:text-zinc-100 text-base">
                           {rec.role === "BS" ? (rec.totalPlates ?? "—") : "—"}
                         </td>
                         <td className="py-3 px-4 text-right">
                           {rec.role === "BS" && rec.totalSales != null ? (
                             <div>
-                              <div className="font-bold text-zinc-900 dark:text-zinc-100">
+                              <div className="font-semibold text-zinc-900 dark:text-zinc-100">
                                 {formatPeso(rec.totalSales)}
                               </div>
                               <div className="text-xs text-zinc-500 font-medium mt-0.5">
@@ -327,28 +324,30 @@ export default function AttendancePage() {
                         </td>
                         <td className="py-3 px-4 text-right">
                           {rec.selfieUrl ? (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setPreviewShift({
-                                  sessionId: rec.sessionId,
-                                  userId: rec.userId,
-                                  userName: rec.userName,
-                                  role: rec.role as any,
-                                  branchId: rec.branchId,
-                                  branchName: rec.branchName,
-                                  startShift: rec.startShift,
-                                  endShift: rec.endShift,
-                                  shiftStatus: rec.shiftStatus,
-                                  selfieUrl: rec.selfieUrl,
-                                })
-                              }
-                              className="text-xs h-7 gap-1 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
-                            >
-                              <Eye size={14} />
-                              <span>View</span>
-                            </Button>
+                            <ActionTooltip label="View Photo">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() =>
+                                  setPreviewShift({
+                                    sessionId: rec.sessionId,
+                                    userId: rec.userId,
+                                    userName: rec.userName,
+                                    role: rec.role as any,
+                                    branchId: rec.branchId,
+                                    branchName: rec.branchName,
+                                    startShift: rec.startShift,
+                                    endShift: rec.endShift,
+                                    shiftStatus: rec.shiftStatus,
+                                    selfieUrl: rec.selfieUrl,
+                                  })
+                                }
+                                className="text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white"
+                                aria-label="View Photo"
+                              >
+                                <Eye size={15} />
+                              </Button>
+                            </ActionTooltip>
                           ) : (
                             <span className="text-zinc-400 text-[10px]">No photo</span>
                           )}

@@ -10,6 +10,7 @@ import type {
   InventoryStats,
   OrderStatus,
   OrderWithDetails,
+  UpdateInventoryInput,
   User,
 } from "@/lib/types";
 
@@ -104,6 +105,7 @@ export interface BranchStockItem {
   branchName: string;
   itemId: number;
   itemName: string;
+  price: number;
   unit: string;
   currentStock: number;
   status: "LOW_STOCK" | "IN_STOCK" | "OUT_OF_STOCK";
@@ -149,7 +151,7 @@ export function useMovementsQuery(enabled = true) {
 }
 
 export function useCatalogQuery(enabled = true) {
-  return useQuery<{ items: Array<{ itemId: number; itemName: string; unit: string | null }> }>({
+  return useQuery<{ items: Array<{ itemId: number; itemName: string; price: number; unit: string | null }> }>({
     queryKey: ["inventory", "catalog"],
     queryFn: async () => {
       const res = await fetch("/api/inventory/catalog");
@@ -197,6 +199,31 @@ export function useAdjustStockMutation() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to adjust stock");
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+}
+
+export function useUpdateInventoryMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      data,
+    }: {
+      itemId: number;
+      data: UpdateInventoryInput;
+    }) => {
+      const res = await fetch(`/api/inventory/${itemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || "Failed to update item");
+      return resData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inventory"] });

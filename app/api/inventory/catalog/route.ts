@@ -13,6 +13,7 @@ export async function GET() {
     .select({
       itemId: inventoryItems.itemId,
       itemName: inventoryItems.itemName,
+      price: inventoryItems.price,
       unit: inventoryItems.unit,
     })
     .from(inventoryItems)

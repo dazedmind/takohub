@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Pen, Plus, Trash2 } from "lucide-react";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import {
   useUsersQuery,
@@ -56,7 +57,7 @@ export default function UsersPage() {
 
   const openEdit = (user: User) => {
     setEditingUser(user);
-    const username = user.username || user.email;
+    const username = user.username;
     setForm({
       name: user.name,
       email: username,
@@ -125,9 +126,6 @@ export default function UsersPage() {
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             User Accounts
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">
-            Manage employee access, assignments, and authorization roles.
-          </p>
         </div>
         <Button
           onClick={openCreate}
@@ -140,7 +138,7 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+      <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
         <CardContent className="p-0">
           {isLoading ? (
             <p className="text-sm text-zinc-500 py-8 text-center">Loading users...</p>
@@ -151,37 +149,29 @@ export default function UsersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                    <th className="py-3 px-4 font-bold">Name</th>
-                    <th className="py-3 px-4 font-bold">Username</th>
-                    <th className="py-3 px-4 font-bold">Role</th>
-                    <th className="py-3 px-4 font-bold">Created</th>
-                    <th className="py-3 px-4 text-right font-bold">Actions</th>
+                    <th className="py-3 px-4 font-semibold">Name</th>
+                    <th className="py-3 px-4 font-semibold">Username</th>
+                    <th className="py-3 px-4 font-semibold">Role</th>
+                    <th className="py-3 px-4 font-semibold">Created</th>
+                    <th className="py-3 px-4 text-right font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {users.map((u) => {
-                    const cleanUsername = u.username || u.email;
-                    const badgeClass =
-                      u.role === "ADMIN"
-                        ? "border-rose-500 text-rose-600 bg-rose-50 dark:bg-rose-950/20"
-                        : u.role === "IM"
-                        ? "border-indigo-500 text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20"
-                        : "border-[#ebd060] text-amber-600 bg-amber-50/50 dark:bg-amber-950/20";
+                    const cleanUsername = u.username;
                     return (
                       <tr
                         key={u.id}
                         className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
                       >
-                        <td className="py-3 px-4 font-bold text-zinc-900 dark:text-zinc-100">
+                        <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
                           {u.name}
                         </td>
                         <td className="py-3 px-4 text-zinc-900 dark:text-zinc-100 font-semibold">
                           {cleanUsername}
                         </td>
                         <td className="py-3 px-4">
-                          <Badge variant="outline" className={`text-xs px-2.5 py-0.5 font-bold ${badgeClass}`}>
                             {ROLE_LABELS[u.role] || u.role}
-                          </Badge>
                         </td>
                         <td className="py-3 px-4 text-zinc-500 font-mono text-xs">
                           {new Date(u.createdAt).toLocaleDateString("en-PH", {
@@ -191,26 +181,29 @@ export default function UsersPage() {
                           })}
                         </td>
                         <td className="py-3 px-4 text-right">
-                          <div className="flex justify-end gap-1.5">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openEdit(u)}
-                              className="h-8 gap-1 text-xs font-semibold"
-                            >
-                              <Pen size={14} />
-                              <span>Edit</span>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDelete(u)}
-                              disabled={deleteMutation.isPending}
-                              className="h-8 gap-1 text-red-600 hover:text-red-700 text-xs font-semibold"
-                            >
-                              <Trash2 size={14} />
-                              <span>Delete</span>
-                            </Button>
+                          <div className="flex justify-end gap-1">
+                            <ActionTooltip label="Edit User">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => openEdit(u)}
+                                aria-label="Edit User"
+                              >
+                                <Pen size={15} />
+                              </Button>
+                            </ActionTooltip>
+                            <ActionTooltip label="Delete User">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => handleDelete(u)}
+                                disabled={deleteMutation.isPending}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                aria-label="Delete User"
+                              >
+                                <Trash2 size={15} />
+                              </Button>
+                            </ActionTooltip>
                           </div>
                         </td>
                       </tr>
@@ -227,7 +220,7 @@ export default function UsersPage() {
         <DialogContent className="sm:max-w-md">
           <form onSubmit={handleSubmit}>
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold">
+              <DialogTitle className="text-lg font-semibold">
                 {editingUser ? "Edit User Account" : "Add New User Account"}
               </DialogTitle>
             </DialogHeader>
@@ -299,7 +292,7 @@ export default function UsersPage() {
                 type="submit"
                 variant="secondary"
                 disabled={isSaving}
-                className="h-10 text-sm font-bold"
+                className="h-10 text-sm font-semibold"
               >
                 {isSaving ? "Saving..." : editingUser ? "Update User" : "Create User"}
               </Button>

@@ -191,12 +191,9 @@ export function CameraModal({
       {/* Top Navbar */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-white">
+          <h1 className="text-xl font-semibold tracking-tight text-white">
             Start Shift & Attendance
           </h1>
-          <p className="text-xs text-zinc-400">
-            Confirm your branch and capture your check-in selfie.
-          </p>
         </div>
         <button
           type="button"
@@ -240,7 +237,7 @@ export function CameraModal({
         </div>
 
         {/* Viewfinder Frame */}
-        <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-zinc-700 bg-black shadow-2xl flex items-center justify-center group">
+        <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden border border-zinc-700 bg-black flex items-center justify-center group">
           {cameraError ? (
             <div className="p-6 text-center text-red-400 space-y-2 max-w-xs">
               <Camera className="mx-auto h-8 w-8 text-red-500 mb-1" />
@@ -261,7 +258,7 @@ export function CameraModal({
                   variant="tertiary"
                   onClick={handleRetake}
                   disabled={isStartingShift}
-                  className="shadow-lg h-9 gap-1.5 bg-black/60 text-white hover:bg-black/80 font-bold border border-zinc-700 rounded-full px-5 text-xs uppercase tracking-wider"
+                  className="h-9 gap-1.5 bg-black/70 text-white hover:bg-black/90 font-semibold rounded-full px-5 text-xs uppercase tracking-wider"
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span>Retake</span>
@@ -282,7 +279,7 @@ export function CameraModal({
                 <button
                   type="button"
                   onClick={handleCapture}
-                  className="w-16 h-16 rounded-full bg-white text-zinc-900 hover:bg-zinc-200 active:scale-95 transition-all flex items-center justify-center shadow-2xl border-4 border-zinc-300 dark:border-zinc-800"
+                  className="w-16 h-16 rounded-full bg-white text-zinc-900 hover:bg-zinc-200 active:scale-95 transition-all flex items-center justify-center"
                 >
                   <Camera className="w-8 h-8" />
                 </button>
@@ -300,7 +297,7 @@ export function CameraModal({
             variant="tertiary"
             onClick={handleClose}
             disabled={isStartingShift}
-            className="flex-1 h-11 text-sm font-semibold rounded-lg border border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+            className="flex-1 h-11 text-sm font-semibold rounded-lg  hover:bg-zinc-800"
           >
             Cancel
           </Button>
@@ -309,7 +306,7 @@ export function CameraModal({
             variant="secondary"
             onClick={handleSubmitShift}
             disabled={!capturedImage || !selectedBranchId || isStartingShift}
-            className="flex-2 h-11 text-sm font-bold rounded-lg bg-[#F4D671] text-[#1C1C1C] hover:bg-[#ebd060] disabled:bg-zinc-800 disabled:text-zinc-500"
+            className="flex-2 h-11 text-sm font-semibold rounded-lg bg-[#F4D671] text-[#1C1C1C] hover:bg-[#ebd060] disabled:bg-zinc-800 disabled:text-zinc-500"
           >
             {isStartingShift ? "Recording..." : "Start Shift Now"}
           </Button>

@@ -44,6 +44,7 @@ export async function GET(request: Request) {
         branchId: branchInventory.branchId,
         itemId: branchInventory.itemId,
         itemName: inventoryItems.itemName,
+        price: inventoryItems.price,
         unit: inventoryItems.unit,
         currentStock: branchInventory.currentStock,
         status: branchInventory.status,

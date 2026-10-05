@@ -125,12 +125,12 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
                   asChild={!isItemLocked}
                   disabled={isItemLocked}
                   isActive={isActive}
-                  className={`h-10 px-3.5 rounded-lg text-sm font-semibold transition-colors ${
+                  className={`h-10 px-3.5 rounded-xl text-sm font-semibold transition-colors ${
                     isItemLocked
                       ? "opacity-40 cursor-not-allowed text-zinc-400 dark:text-zinc-600 hover:bg-transparent pointer-events-none select-none"
                       : isActive
-                      ? "bg-[#F4D671]/20 text-[#1C1C1C] dark:text-[#F4D671] font-bold"
-                      : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      ? "bg-orange-800 dark:bg-orange-900/60 text-orange-100 dark:text-orange-100 font-bold hover:bg-orange-200/80 dark:hover:bg-orange-900/60 rounded-md "
+                      : "text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   }`}
                 >
                   {isItemLocked ? (
@@ -142,7 +142,7 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
                       <Lock size={14} className="text-zinc-400 dark:text-zinc-600" />
                     </div>
                   ) : (
-                    <Link href={item.href} className="flex items-center gap-3">
+                    <Link href={item.href} className="flex items-center gap-3 rounded-lg">
                       {item.icon}
                       <span className="text-sm">{item.name}</span>
                     </Link>
@@ -157,7 +157,7 @@ export function DashboardSidebar({ session }: DashboardSidebarProps) {
       <SidebarFooter className="p-3.5 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
         {/* User Profile Info with Avatar */}
         <div className="flex items-center gap-3 px-2 py-1">
-          <div className="w-9 h-9 rounded-full bg-[#F4D671] text-[#1C1C1C] font-bold text-sm flex items-center justify-center shrink-0 shadow-xs border border-[#ebd060]">
+          <div className="w-9 h-9 rounded-full bg-[#F4D671] text-[#1C1C1C] font-bold text-sm flex items-center justify-center shrink-0">
             {userInitial}
           </div>
           <div className="min-w-0 flex-1">

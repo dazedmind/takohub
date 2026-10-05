@@ -12,7 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Lock, Minus, Pen, Plus } from "lucide-react";
+import { ArrowRightLeft, Lock, Minus, Pen, Plus } from "lucide-react";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import { useGlobalDialog } from "@/components/providers/dialog-provider";
 import { useSessionContext } from "@/components/providers/session-provider";
 import { CameraModal } from "@/components/camera-modal";
@@ -24,7 +25,9 @@ import {
   useMovementsQuery,
   useReceiveStockMutation,
   useAdjustStockMutation,
+  useUpdateInventoryMutation,
 } from "@/lib/queries";
+import { formatPeso } from "@/lib/business-logic";
 import type { SessionUser } from "@/lib/types";
 
 export default function InventoryPage() {
@@ -51,6 +54,13 @@ export default function InventoryPage() {
   const [adjustTargetQty, setAdjustTargetQty] = useState<number>(0);
   const [lastInitializedId, setLastInitializedId] = useState<string>("");
   const [adjustReason, setAdjustReason] = useState<string>("");
+
+  // Edit Item Modal (IM / Admin)
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editItemId, setEditItemId] = useState<number | null>(null);
+  const [editItemName, setEditItemName] = useState<string>("");
+  const [editUnit, setEditUnit] = useState<string>("pcs");
+  const [editPrice, setEditPrice] = useState<string>("0");
 
   const isBS = user?.role === "BS";
   const isIM = user?.role === "IM";
@@ -118,6 +128,7 @@ export default function InventoryPage() {
   // Mutations
   const receiveMutation = useReceiveStockMutation();
   const adjustMutation = useAdjustStockMutation();
+  const updateItemMutation = useUpdateInventoryMutation();
 
   const handleReceiveStock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +184,50 @@ export default function InventoryPage() {
     setAdjustModalOpen(true);
   };
 
+  const openEditDialog = (item: { itemId: number; itemName: string; unit: string; price?: number }) => {
+    setEditItemId(item.itemId);
+    setEditItemName(item.itemName);
+    setEditUnit(item.unit || "pcs");
+    setEditPrice(String(item.price ?? 0));
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editItemId) return;
+
+    if (!editItemName.trim()) {
+      dialog.show({ title: "Verification Required", message: "Please enter an item name", type: "error" });
+      return;
+    }
+
+    if (!editUnit.trim()) {
+      dialog.show({ title: "Verification Required", message: "Please enter a unit of measurement", type: "error" });
+      return;
+    }
+
+    const priceNum = Number(editPrice);
+    if (isNaN(priceNum) || priceNum < 0) {
+      dialog.show({ title: "Verification Required", message: "Please enter a valid non-negative price", type: "error" });
+      return;
+    }
+
+    try {
+      await updateItemMutation.mutateAsync({
+        itemId: editItemId,
+        data: {
+          itemName: editItemName.trim(),
+          unit: editUnit.trim(),
+          price: Math.round(priceNum),
+        },
+      });
+      dialog.show({ title: "Success", message: `Updated "${editItemName.trim()}" successfully!`, type: "success" });
+      setEditModalOpen(false);
+    } catch (err) {
+      dialog.show({ title: "Error", message: err instanceof Error ? err.message : "Failed to update item", type: "error" });
+    }
+  };
+
   const filteredCentralItems = items.filter((i) =>
     i.itemName.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -186,14 +241,9 @@ export default function InventoryPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200 dark:border-zinc-800">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             {isBS ? "Branch Inventory" : "Inventory Management"}
           </h1>
-          <p className="text-xs text-zinc-500">
-            {isBS
-              ? "View current quantities for your assigned branch."
-              : "Central warehouse stock, branch distribution, and adjustments."}
-          </p>
         </div>
 
         {/* Actions for IM / Admin */}
@@ -237,7 +287,7 @@ export default function InventoryPage() {
 
       {/* LOCKED IF SHIFT REQUIRED BUT NOT ACTIVE */}
       {isShiftRequired ? (
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm text-center py-12">
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-center py-12">
           <CardContent className="space-y-3">
             <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto">
               <Lock className="w-6 h-6" />
@@ -264,14 +314,14 @@ export default function InventoryPage() {
         <div className="space-y-4">
           {/* Navigation Tabs for IM / Admin */}
           {!isBS && (
-            <div className="flex gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+            <div className="flex items-end gap-1 border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setActiveTab("CENTRAL")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                className={`px-4 py-2 text-xs font-semibold rounded-t-md transition-all -mb-px border-b-2 ${
                   activeTab === "CENTRAL"
-                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    ? "bg-orange-100/80 dark:bg-orange-950/50 text-orange-950 dark:text-orange-100 font-bold border-b-orange-500"
+                    : "border-b-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
                 }`}
               >
                 Central Warehouse ({items.length})
@@ -280,10 +330,10 @@ export default function InventoryPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab("BRANCH")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                className={`px-4 py-2 text-xs font-semibold rounded-t-md transition-all -mb-px border-b-2 ${
                   activeTab === "BRANCH"
-                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    ? "bg-orange-100/80 dark:bg-orange-950/50 text-orange-950 dark:text-orange-100 font-bold border-b-orange-500"
+                    : "border-b-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
                 }`}
               >
                 Branch Inventory
@@ -293,10 +343,10 @@ export default function InventoryPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("MOVEMENTS")}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                  className={`px-4 py-2 text-xs font-semibold rounded-t-md transition-all -mb-px border-b-2 ${
                     activeTab === "MOVEMENTS"
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
-                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      ? "bg-orange-100/80 dark:bg-orange-950/50 text-orange-950 dark:text-orange-100 font-bold border-b-orange-500"
+                      : "border-b-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100/60 dark:hover:bg-zinc-800/40"
                   }`}
                 >
                   Movements Audit ({movements.length})
@@ -306,7 +356,7 @@ export default function InventoryPage() {
           )}
 
           {/* Search & Location Bar */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row-reverse items-stretch sm:items-center justify-between gap-3">
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -343,7 +393,7 @@ export default function InventoryPage() {
 
           {/* TAB 1: CENTRAL INVENTORY (IM / ADMIN ONLY) */}
           {activeTab === "CENTRAL" && !isBS && (
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
               <CardContent className="p-0">
                 {isCentralLoading ? (
                   <p className="text-xs text-zinc-500 py-6 text-center">Loading inventory...</p>
@@ -352,11 +402,11 @@ export default function InventoryPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                          <th className="py-3 px-4 font-bold">Item</th>
-                          {/* <th className="py-3 px-4 font-bold">Unit</th> */}
-                          <th className="py-3 px-4 font-bold text-center">Stock</th>
-                          <th className="py-3 px-4 font-bold">Status</th>
-                          <th className="py-3 px-4 font-bold text-right">Actions</th>
+                          <th className="py-3 px-4 font-semibold">Item</th>
+                          <th className="py-3 px-4 font-semibold">Price</th>
+                          <th className="py-3 px-4 font-semibold text-center">Stock</th>
+                          <th className="py-3 px-4 font-semibold">Status</th>
+                          <th className="py-3 px-4 font-semibold text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -365,33 +415,50 @@ export default function InventoryPage() {
                             key={item.itemId}
                             className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
                           >
-                            <td className="py-3 px-4 font-bold text-zinc-900 dark:text-zinc-100">
+                            <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
                               {item.itemName}
+                              <span className="ml-2 text-xs font-normal text-zinc-400">({item.unit || "pcs"})</span>
+                            </td>
+                            <td className="py-3 px-4 font-medium text-zinc-900 dark:text-zinc-100 text-base">
+                              {formatPeso(item.price)}
                             </td>
                             {/* <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit || "—"}</td> */}
-                            <td className="py-3 px-4 text-center font-bold text-base">{item.centralStock}</td>
+                            <td className="py-3 px-4 text-center font-semibold text-base">{item.centralStock}</td>
                             <td className="py-3 px-4">
                               <Badge
                                 variant="outline"
                                 className={
                                   item.status === "LOW_STOCK"
-                                    ? "border-yellow-500 text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20 text-[10px] px-2.5 py-0.5 font-bold"
-                                    : "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 text-[10px] px-2.5 py-0.5 font-bold"
+                                    ? "border-yellow-500 text-yellow-600 bg-yellow-500 text-[10px] p-1 font-semibold"
+                                    : "border-emerald-500 text-emerald-600 bg-emerald-500 text-[10px] p-1 font-semibold"
                                 }
                               >
-                                {item.status === "LOW_STOCK" ? "Low Stock" : "In Stock"}
+                                {item.status === "LOW_STOCK" ? "" : ""}
                               </Badge>
                             </td>
                             <td className="py-3 px-4 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openAdjustDialog(item.itemId, null)}
-                                className="h-8 gap-1.5 text-zinc-600 hover:text-zinc-900 text-xs font-semibold"
-                              >
-                                <Pen size={14} />
-                                <span>Adjust</span>
-                              </Button>
+                              <div className="flex justify-end gap-1">
+                                <ActionTooltip label="Adjust Stock">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => openAdjustDialog(item.itemId, null)}
+                                    aria-label="Adjust Stock"
+                                  >
+                                    <ArrowRightLeft size={15} />
+                                  </Button>
+                                </ActionTooltip>
+                                <ActionTooltip label="Edit Item">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => openEditDialog(item)}
+                                    aria-label="Edit Item"
+                                  >
+                                    <Pen size={15} />
+                                  </Button>
+                                </ActionTooltip>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -405,7 +472,7 @@ export default function InventoryPage() {
 
           {/* TAB 2: BRANCH INVENTORY (BS / ADMIN / IM) */}
           {activeTab === "BRANCH" && (
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
               <CardContent className="p-0">
                 {isBranchLoading ? (
                   <p className="text-xs text-zinc-500 py-6 text-center">Loading branch inventory...</p>
@@ -418,11 +485,11 @@ export default function InventoryPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                          <th className="py-3 px-4 font-bold">Product</th>
-                          {/* <th className="py-3 px-4 font-bold">Unit</th> */}
-                          <th className="py-3 px-4 font-bold text-center">Stock</th>
-                          <th className="py-3 px-4 font-bold">Status</th>
-                          <th className="py-3 px-4 font-bold text-right">Actions</th>
+                          <th className="py-3 px-4 font-semibold">Product</th>
+                          {/* <th className="py-3 px-4 font-semibold">Unit</th> */}
+                          <th className="py-3 px-4 font-semibold text-center">Stock</th>
+                          <th className="py-3 px-4 font-semibold">Status</th>
+                          <th className="py-3 px-4 font-semibold text-right">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -431,11 +498,11 @@ export default function InventoryPage() {
                             key={item.branchInventoryId}
                             className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
                           >
-                            <td className="py-3 px-4 font-bold text-zinc-900 dark:text-zinc-100">
+                            <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
                               {item.itemName}
                             </td>
                             {/* <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit}</td> */}
-                            <td className="py-3 px-4 text-center font-bold text-zinc-900 dark:text-zinc-100 text-base">
+                            <td className="py-3 px-4 text-center font-semibold text-zinc-900 dark:text-zinc-100 text-base">
                               {item.currentStock}
                             </td>
                             <td className="py-3 px-4">
@@ -443,22 +510,25 @@ export default function InventoryPage() {
                                 variant="outline"
                                 className={
                                   item.status === "LOW_STOCK"
-                                    ? "border-yellow-500 text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20 text-[10px] px-2.5 py-0.5 font-bold"
-                                    : "border-emerald-500 text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20 text-[10px] px-2.5 py-0.5 font-bold"
+                                    ? "border-yellow-500 text-yellow-600 bg-yellow-500 p-1 font-semibold"
+                                    : "border-emerald-500 text-emerald-600 bg-emerald-500 p-1 font-semibold"
                                 }
                               >
-                                {item.status === "LOW_STOCK" ? "Low Stock" : "In Stock"}
                               </Badge>
                             </td>
                             <td className="py-3 px-4 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openAdjustDialog(item.itemId, item.branchId)}
-                                className="h-8 gap-1.5 text-xs font-semibold"
-                              >
-                                <Pen size={14} />
-                              </Button>
+                              <div className="flex justify-end">
+                                <ActionTooltip label="Adjust Stock">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    onClick={() => openAdjustDialog(item.itemId, item.branchId)}
+                                    aria-label="Adjust Stock"
+                                  >
+                                    <ArrowRightLeft size={15} />
+                                  </Button>
+                                </ActionTooltip>
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -472,7 +542,7 @@ export default function InventoryPage() {
 
           {/* TAB 3: MOVEMENTS AUDIT (IM / ADMIN ONLY) */}
           {activeTab === "MOVEMENTS" && !isBS && (
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
               <CardContent className="p-0">
                 {isMovementsLoading ? (
                   <p className="text-xs text-zinc-500 py-6 text-center">Loading audit log...</p>
@@ -485,14 +555,14 @@ export default function InventoryPage() {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                          <th className="py-3 px-4 font-bold">Timestamp</th>
-                          <th className="py-3 px-4 font-bold">Item</th>
-                          <th className="py-3 px-4 font-bold">Event</th>
-                          <th className="py-3 px-4 font-bold">Location</th>
-                          <th className="py-3 px-4 font-bold text-center">Change</th>
-                          <th className="py-3 px-4 font-bold text-center">Balance</th>
-                          <th className="py-3 px-4 font-bold">User</th>
-                          <th className="py-3 px-4 font-bold">Reason</th>
+                          <th className="py-3 px-4 font-semibold">Timestamp</th>
+                          <th className="py-3 px-4 font-semibold">Item</th>
+                          <th className="py-3 px-4 font-semibold">Event</th>
+                          <th className="py-3 px-4 font-semibold">Location</th>
+                          <th className="py-3 px-4 font-semibold text-center">Change</th>
+                          <th className="py-3 px-4 font-semibold text-center">Balance</th>
+                          <th className="py-3 px-4 font-semibold">User</th>
+                          <th className="py-3 px-4 font-semibold">Reason</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -511,7 +581,7 @@ export default function InventoryPage() {
                                   minute: "2-digit",
                                 })}
                               </td>
-                              <td className="py-3 px-4 font-bold text-zinc-900 dark:text-zinc-100">
+                              <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
                                 {mov.itemName}
                               </td>
                               <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
@@ -521,13 +591,13 @@ export default function InventoryPage() {
                                 {mov.branchName || "Central Warehouse"}
                               </td>
                               <td
-                                className={`py-3 px-4 text-center font-mono font-bold ${
+                                className={`py-3 px-4 text-center font-mono font-semibold ${
                                   isPositive ? "text-emerald-600" : "text-red-600"
                                 }`}
                               >
                                 {isPositive ? `+${mov.quantity}` : mov.quantity}
                               </td>
-                              <td className="py-3 px-4 text-center font-mono text-zinc-500 font-bold">
+                              <td className="py-3 px-4 text-center font-mono text-zinc-500 font-semibold">
                                 {mov.previousBalance} → {mov.newBalance}
                               </td>
                               <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
@@ -712,6 +782,72 @@ export default function InventoryPage() {
                 disabled={adjustMutation.isPending}
               >
                 {adjustMutation.isPending ? "Submitting..." : "Apply Adjustment"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Item Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <form onSubmit={handleUpdateItem}>
+            <DialogHeader>
+              <DialogTitle>Edit Inventory Item</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-3 py-3 text-sm">
+              <div>
+                <label className="text-xs text-zinc-500 block mb-1">Item Name</label>
+                <Input
+                  value={editItemName}
+                  onChange={(e) => setEditItemName(e.target.value)}
+                  placeholder="e.g. Cheese, Octopus, Flour"
+                  required
+                  className="h-9 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-zinc-500 block mb-1">Unit</label>
+                <Input
+                  value={editUnit}
+                  onChange={(e) => setEditUnit(e.target.value)}
+                  placeholder="e.g. pcs, kg, packs, boxes"
+                  required
+                  className="h-9 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-zinc-500 block mb-1">Price (₱)</label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(e.target.value)}
+                  placeholder="0"
+                  required
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="tertiary"
+                onClick={() => setEditModalOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={updateItemMutation.isPending}
+              >
+                {updateItemMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </DialogFooter>
           </form>

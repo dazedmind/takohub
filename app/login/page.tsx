@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { useGlobalDialog } from "@/components/providers/dialog-provider";
 
 export default function LoginPage() {
@@ -54,72 +54,67 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
             Sign in to TakoHub
           </h1>
         </div>
 
         {/* Login Card */}
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
-          {/* <CardHeader>
-            <CardTitle className="text-base font-semibold">Sign in to your account</CardTitle>
-          </CardHeader> */}
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
-                <div className="p-2.5 text-xs text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="username"
-                  className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block"
-                >
-                  Username
-                </label>
-                <Input
-                  type="text"
-                  id="username"
-                  placeholder="Enter username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={isLoading}
-                  required
-                  className="h-10 text-sm"
-                />
+        <Card className="p-6 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl shadow-xs">
+          <form onSubmit={handleLogin} className="space-y-4">
+            {error && (
+              <div className="p-2.5 text-xs text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-md">
+                {error}
               </div>
+            )}
 
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="password"
-                  className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block"
-                >
-                  Password
-                </label>
-                <Input
-                  type="password"
-                  id="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  required
-                  className="h-10 text-sm"
-                />
-              </div>
-
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={isLoading}
-                className="w-full h-10 font-bold"
+            <div className="space-y-1.5">
+              <label
+                htmlFor="username"
+                className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block"
               >
-                {isLoading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-          </CardContent>
+                Username
+              </label>
+              <Input
+                type="text"
+                id="username"
+                placeholder="Enter username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={isLoading}
+                required
+                className="h-10 text-sm"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                htmlFor="password"
+                className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block"
+              >
+                Password
+              </label>
+              <Input
+                type="password"
+                id="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+                required
+                className="h-10 text-sm"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isLoading}
+              className="w-full h-10 font-semibold"
+            >
+              {isLoading ? "Signing in..." : "Sign In"}
+            </Button>
+          </form>
         </Card>
       </div>
     </main>
