@@ -75,6 +75,18 @@ export async function GET(request: Request) {
     const totalPlates = rows.reduce((sum, r) => sum + (r.totalPlates || 0), 0);
     const totalSalary = rows.reduce((sum, r) => sum + (r.salary || 0), 0);
     const totalExpenses = rows.reduce((sum, r) => sum + (r.expenses || 0), 0);
+    const totalNetSales = rows.reduce(
+      (sum, r) =>
+        sum +
+        (r.netSales ??
+          ((r.totalSales || 0) -
+            (r.expenses || 0) -
+            (r.salary || 0) -
+            (r.free || 0) -
+            (r.shortOver || 0) -
+            (Number(r.trashLeftover) || 0))),
+      0
+    );
 
     return NextResponse.json({
       sales: rows,
@@ -83,6 +95,7 @@ export async function GET(request: Request) {
         totalPlates,
         totalSalary,
         totalExpenses,
+        totalNetSales,
         recordCount: rows.length,
       },
     });

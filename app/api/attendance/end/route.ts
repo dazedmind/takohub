@@ -1,8 +1,8 @@
 import { db } from "../../../../lib/db";
 import { and, eq } from "drizzle-orm";
-import { sessionLog, sales, branchInventory, inventoryUsageLog, inventoryItems, salesRemarks } from "../../../db/schema";
+import { sessionLog, sales, branchInventory, inventoryUsageLog, inventoryItems, salesRemarks, salaryMatrix } from "../../../db/schema";
 import { requireAuth } from "../../../../lib/auth-utils";
-import { calculateTotalPlates, calculateTotalSales, calculateSalary, calculateShortOver } from "../../../../lib/business-logic";
+import { calculateTotalPlates, calculateTotalSales, calculateSalary, calculateShortOver, calculateNetSales, calculateSalaryFromMatrix } from "../../../../lib/business-logic";
 
 export async function POST(request: Request) {
   try {
@@ -40,11 +40,13 @@ export async function POST(request: Request) {
       // Perform business logic calculations
       const totalPlates = calculateTotalPlates(cheese, octobits, crab);
       const totalSales = calculateTotalSales(totalPlates);
-      const salary = calculateSalary(totalPlates);
+      
+      const dbMatrix = await db.select().from(salaryMatrix);
+      const salary = calculateSalaryFromMatrix(totalPlates, dbMatrix);
       const shortOver = parseInt(body.shortOver || 0, 10);
 
       const grossSales = totalSales;
-      const netSales = grossSales - expenses - free - shortOver - trashLeftover;
+      const netSales = calculateNetSales(grossSales, expenses, salary, free, shortOver, trashLeftover);
 
       // Create Sales Record
       const [salesRecord] = await db

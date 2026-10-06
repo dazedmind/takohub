@@ -9,6 +9,7 @@ import type {
   sales,
   stockAdjustments,
   inventoryMovements,
+  salaryMatrix,
 } from "@/app/db/schema";
 
 export type UserRole = "ADMIN" | "BS" | "IM";
@@ -55,6 +56,10 @@ export type NewStockAdjustment = InferInsertModel<typeof stockAdjustments>;
 
 export type InventoryMovement = InferSelectModel<typeof inventoryMovements>;
 export type NewInventoryMovement = InferInsertModel<typeof inventoryMovements>;
+
+export type SalaryTier = InferSelectModel<typeof salaryMatrix>;
+export type NewSalaryTier = InferInsertModel<typeof salaryMatrix>;
+
 
 export interface InventoryMovementWithDetails extends InventoryMovement {
   itemName?: string;
@@ -226,4 +231,19 @@ export interface UpdateInventoryInput {
   status?: StockStatus;
   photoUrl?: string;
 }
+
+export interface CreateSalaryTierInput {
+  minPlates: number;
+  maxPlates?: number | null;
+  salary: number;
+  description?: string;
+}
+
+export interface UpdateSalaryTierInput {
+  minPlates?: number;
+  maxPlates?: number | null;
+  salary?: number;
+  description?: string;
+}
+
 

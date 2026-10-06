@@ -11,10 +11,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useGlobalDialog } from "@/components/providers/dialog-provider";
+import { useSalaryMatrixQuery } from "@/lib/queries";
 import {
   calculatePlatesSold,
   calculateTotalSales,
   calculateSalary,
+  calculateSalaryFromMatrix,
   formatPeso,
 } from "@/lib/business-logic";
 import type { ActiveEmployeeShift } from "@/lib/types";
@@ -72,9 +74,11 @@ export function SalesLogModal({
     return calculateTotalSales(totalPlatesSold);
   }, [totalPlatesSold]);
 
+  const { data: salaryMatrixData } = useSalaryMatrixQuery();
+
   const calculatedSalary = useMemo(() => {
-    return calculateSalary(totalPlatesSold);
-  }, [totalPlatesSold]);
+    return calculateSalaryFromMatrix(totalPlatesSold, salaryMatrixData?.tiers);
+  }, [totalPlatesSold, salaryMatrixData?.tiers]);
 
   // const tallyDiffers = useMemo(() => {
   //   return (Number(cashOnhand) || 0) + (Number(gcashPayment) || 0) !== totalSales;

@@ -21,6 +21,7 @@ import {
   useUpdateUserMutation,
   useDeleteUserMutation,
 } from "@/lib/queries";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import type { CreateUserInput, User, UserRole } from "@/lib/types";
 
 const ROLE_LABELS: Record<UserRole, string> = {
@@ -40,6 +41,15 @@ export default function UsersPage() {
   const { data, isLoading } = useUsersQuery();
   const users = data?.users || [];
   const dialog = useGlobalDialog();
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    paginatedItems: paginatedUsers,
+  } = usePagination(users, 10);
 
   const createMutation = useCreateUserMutation();
   const updateMutation = useUpdateUserMutation();
@@ -145,7 +155,8 @@ export default function UsersPage() {
           ) : users.length === 0 ? (
             <p className="text-sm text-zinc-500 py-8 text-center">No users found.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
@@ -157,7 +168,7 @@ export default function UsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {users.map((u) => {
+                  {paginatedUsers.map((u) => {
                     const cleanUsername = u.username;
                     return (
                       <tr
@@ -212,7 +223,15 @@ export default function UsersPage() {
                 </tbody>
               </table>
             </div>
-          )}
+            <TablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
+        )}
         </CardContent>
       </Card>
 

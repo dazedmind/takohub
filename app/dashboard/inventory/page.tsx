@@ -28,6 +28,7 @@ import {
   useUpdateInventoryMutation,
 } from "@/lib/queries";
 import { formatPeso } from "@/lib/business-logic";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import type { SessionUser } from "@/lib/types";
 
 export default function InventoryPage() {
@@ -236,6 +237,17 @@ export default function InventoryPage() {
     i.itemName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const centralPagination = usePagination(filteredCentralItems, 10);
+  const branchPagination = usePagination(filteredBranchItems, 10);
+  const movementsPagination = usePagination(movements, 10);
+
+  // Reset pagination when search query changes
+  useEffect(() => {
+    centralPagination.setCurrentPage(1);
+    branchPagination.setCurrentPage(1);
+  }, [searchQuery]);
+
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -314,7 +326,7 @@ export default function InventoryPage() {
         <div className="space-y-4">
           {/* Navigation Tabs for IM / Admin */}
           {!isBS && (
-            <div className="flex items-end gap-1 border-b border-zinc-200 dark:border-zinc-800 overflow-x-auto">
+            <div className="flex items-end gap-1 border-b border-zinc-200 dark:border-zinc-800">
               <button
                 type="button"
                 onClick={() => setActiveTab("CENTRAL")}
@@ -398,73 +410,82 @@ export default function InventoryPage() {
                 {isCentralLoading ? (
                   <p className="text-xs text-zinc-500 py-6 text-center">Loading inventory...</p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                          <th className="py-3 px-4 font-semibold">Item</th>
-                          <th className="py-3 px-4 font-semibold">Price</th>
-                          <th className="py-3 px-4 font-semibold text-center">Stock</th>
-                          <th className="py-3 px-4 font-semibold">Status</th>
-                          <th className="py-3 px-4 font-semibold text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                        {filteredCentralItems.map((item) => (
-                          <tr
-                            key={item.itemId}
-                            className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
-                          >
-                            <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
-                              {item.itemName}
-                              <span className="ml-2 text-xs font-normal text-zinc-400">({item.unit || "pcs"})</span>
-                            </td>
-                            <td className="py-3 px-4 font-medium text-zinc-900 dark:text-zinc-100 text-base">
-                              {formatPeso(item.price)}
-                            </td>
-                            {/* <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit || "—"}</td> */}
-                            <td className="py-3 px-4 text-center font-semibold text-base">{item.centralStock}</td>
-                            <td className="py-3 px-4">
-                              <Badge
-                                variant="outline"
-                                className={
-                                  item.status === "LOW_STOCK"
-                                    ? "border-yellow-500 text-yellow-600 bg-yellow-500 text-[10px] p-1 font-semibold"
-                                    : "border-emerald-500 text-emerald-600 bg-emerald-500 text-[10px] p-1 font-semibold"
-                                }
-                              >
-                                {item.status === "LOW_STOCK" ? "" : ""}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex justify-end gap-1">
-                                <ActionTooltip label="Adjust Stock">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={() => openAdjustDialog(item.itemId, null)}
-                                    aria-label="Adjust Stock"
-                                  >
-                                    <ArrowRightLeft size={15} />
-                                  </Button>
-                                </ActionTooltip>
-                                <ActionTooltip label="Edit Item">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={() => openEditDialog(item)}
-                                    aria-label="Edit Item"
-                                  >
-                                    <Pen size={15} />
-                                  </Button>
-                                </ActionTooltip>
-                              </div>
-                            </td>
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
+                            <th className="py-3 px-4 font-semibold">Item</th>
+                            <th className="py-3 px-4 font-semibold">Price</th>
+                            <th className="py-3 px-4 font-semibold text-center">Stock</th>
+                            <th className="py-3 px-4 font-semibold">Status</th>
+                            <th className="py-3 px-4 font-semibold text-right">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                          {centralPagination.paginatedItems.map((item) => (
+                            <tr
+                              key={item.itemId}
+                              className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
+                            >
+                              <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                                {item.itemName}
+                                <span className="ml-2 text-xs font-normal text-zinc-400">({item.unit || "pcs"})</span>
+                              </td>
+                              <td className="py-3 px-4 font-medium text-zinc-900 dark:text-zinc-100 text-base">
+                                {formatPeso(item.price)}
+                              </td>
+                              {/* <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit || "—"}</td> */}
+                              <td className="py-3 px-4 text-center font-semibold text-base">{item.centralStock}</td>
+                              <td className="py-3 px-4">
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    item.status === "LOW_STOCK"
+                                      ? "border-yellow-500 text-yellow-600 bg-yellow-500 text-[10px] p-1 font-semibold"
+                                      : "border-emerald-500 text-emerald-600 bg-emerald-500 text-[10px] p-1 font-semibold"
+                                  }
+                                >
+                                  {item.status === "LOW_STOCK" ? "" : ""}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex justify-end gap-1">
+                                  <ActionTooltip label="Adjust Stock">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      onClick={() => openAdjustDialog(item.itemId, null)}
+                                      aria-label="Adjust Stock"
+                                    >
+                                      <ArrowRightLeft size={15} />
+                                    </Button>
+                                  </ActionTooltip>
+                                  <ActionTooltip label="Edit Item">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      onClick={() => openEditDialog(item)}
+                                      aria-label="Edit Item"
+                                    >
+                                      <Pen size={15} />
+                                    </Button>
+                                  </ActionTooltip>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <TablePagination
+                      currentPage={centralPagination.currentPage}
+                      pageSize={centralPagination.pageSize}
+                      totalItems={centralPagination.totalItems}
+                      onPageChange={centralPagination.setCurrentPage}
+                      onPageSizeChange={centralPagination.setPageSize}
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -481,60 +502,69 @@ export default function InventoryPage() {
                     No items recorded for this branch.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                          <th className="py-3 px-4 font-semibold">Product</th>
-                          {/* <th className="py-3 px-4 font-semibold">Unit</th> */}
-                          <th className="py-3 px-4 font-semibold text-center">Stock</th>
-                          <th className="py-3 px-4 font-semibold">Status</th>
-                          <th className="py-3 px-4 font-semibold text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                        {filteredBranchItems.map((item) => (
-                          <tr
-                            key={item.branchInventoryId}
-                            className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
-                          >
-                            <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
-                              {item.itemName}
-                            </td>
-                            {/* <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit}</td> */}
-                            <td className="py-3 px-4 text-center font-semibold text-zinc-900 dark:text-zinc-100 text-base">
-                              {item.currentStock}
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge
-                                variant="outline"
-                                className={
-                                  item.status === "LOW_STOCK"
-                                    ? "border-yellow-500 text-yellow-600 bg-yellow-500 p-1 font-semibold"
-                                    : "border-emerald-500 text-emerald-600 bg-emerald-500 p-1 font-semibold"
-                                }
-                              >
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex justify-end">
-                                <ActionTooltip label="Adjust Stock">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={() => openAdjustDialog(item.itemId, item.branchId)}
-                                    aria-label="Adjust Stock"
-                                  >
-                                    <ArrowRightLeft size={15} />
-                                  </Button>
-                                </ActionTooltip>
-                              </div>
-                            </td>
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
+                            <th className="py-3 px-4 font-semibold">Product</th>
+                            {/* <th className="py-3 px-4 font-semibold">Unit</th> */}
+                            <th className="py-3 px-4 font-semibold text-center">Stock</th>
+                            <th className="py-3 px-4 font-semibold">Status</th>
+                            <th className="py-3 px-4 font-semibold text-right">Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                          {branchPagination.paginatedItems.map((item) => (
+                            <tr
+                              key={item.branchInventoryId}
+                              className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
+                            >
+                              <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                                {item.itemName}
+                              </td>
+                              {/* <td className="py-3 px-4 text-zinc-500 font-medium">{item.unit}</td> */}
+                              <td className="py-3 px-4 text-center font-semibold text-zinc-900 dark:text-zinc-100 text-base">
+                                {item.currentStock}
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    item.status === "LOW_STOCK"
+                                      ? "border-yellow-500 text-yellow-600 bg-yellow-500 p-1 font-semibold"
+                                      : "border-emerald-500 text-emerald-600 bg-emerald-500 p-1 font-semibold"
+                                  }
+                                >
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex justify-end">
+                                  <ActionTooltip label="Adjust Stock">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      onClick={() => openAdjustDialog(item.itemId, item.branchId)}
+                                      aria-label="Adjust Stock"
+                                    >
+                                      <ArrowRightLeft size={15} />
+                                    </Button>
+                                  </ActionTooltip>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <TablePagination
+                      currentPage={branchPagination.currentPage}
+                      pageSize={branchPagination.pageSize}
+                      totalItems={branchPagination.totalItems}
+                      onPageChange={branchPagination.setCurrentPage}
+                      onPageSizeChange={branchPagination.setPageSize}
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -551,67 +581,76 @@ export default function InventoryPage() {
                     No movements recorded yet.
                   </p>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                          <th className="py-3 px-4 font-semibold">Timestamp</th>
-                          <th className="py-3 px-4 font-semibold">Item</th>
-                          <th className="py-3 px-4 font-semibold">Event</th>
-                          <th className="py-3 px-4 font-semibold">Location</th>
-                          <th className="py-3 px-4 font-semibold text-center">Change</th>
-                          <th className="py-3 px-4 font-semibold text-center">Balance</th>
-                          <th className="py-3 px-4 font-semibold">User</th>
-                          <th className="py-3 px-4 font-semibold">Reason</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                        {movements.map((mov) => {
-                          const isPositive = mov.quantity > 0;
-                          return (
-                            <tr
-                              key={mov.movementId}
-                              className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
-                            >
-                              <td className="py-3 px-4 text-zinc-500 font-mono text-xs">
-                                {new Date(mov.createdAt).toLocaleString("en-PH", {
-                                  month: "short",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </td>
-                              <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
-                                {mov.itemName}
-                              </td>
-                              <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
-                                {mov.movementType}
-                              </td>
-                              <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 font-semibold">
-                                {mov.branchName || "Central Warehouse"}
-                              </td>
-                              <td
-                                className={`py-3 px-4 text-center font-mono font-semibold ${
-                                  isPositive ? "text-emerald-600" : "text-red-600"
-                                }`}
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
+                            <th className="py-3 px-4 font-semibold">Timestamp</th>
+                            <th className="py-3 px-4 font-semibold">Item</th>
+                            <th className="py-3 px-4 font-semibold">Event</th>
+                            <th className="py-3 px-4 font-semibold">Location</th>
+                            <th className="py-3 px-4 font-semibold text-center">Change</th>
+                            <th className="py-3 px-4 font-semibold text-center">Balance</th>
+                            <th className="py-3 px-4 font-semibold">User</th>
+                            <th className="py-3 px-4 font-semibold">Reason</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                          {movementsPagination.paginatedItems.map((mov) => {
+                            const isPositive = mov.quantity > 0;
+                            return (
+                              <tr
+                                key={mov.movementId}
+                                className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
                               >
-                                {isPositive ? `+${mov.quantity}` : mov.quantity}
-                              </td>
-                              <td className="py-3 px-4 text-center font-mono text-zinc-500 font-semibold">
-                                {mov.previousBalance} → {mov.newBalance}
-                              </td>
-                              <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
-                                {mov.userName || "System"}
-                              </td>
-                              <td className="py-3 px-4 text-zinc-500 italic font-medium max-w-xs truncate">
-                                {mov.reason || "—"}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                                <td className="py-3 px-4 text-zinc-500 font-mono text-xs">
+                                  {new Date(mov.createdAt).toLocaleString("en-PH", {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </td>
+                                <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                                  {mov.itemName}
+                                </td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                                  {mov.movementType}
+                                </td>
+                                <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 font-semibold">
+                                  {mov.branchName || "Central Warehouse"}
+                                </td>
+                                <td
+                                  className={`py-3 px-4 text-center font-mono font-semibold ${
+                                    isPositive ? "text-emerald-600" : "text-red-600"
+                                  }`}
+                                >
+                                  {isPositive ? `+${mov.quantity}` : mov.quantity}
+                                </td>
+                                <td className="py-3 px-4 text-center font-mono text-zinc-500 font-semibold">
+                                  {mov.previousBalance} → {mov.newBalance}
+                                </td>
+                                <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 font-medium">
+                                  {mov.userName || "System"}
+                                </td>
+                                <td className="py-3 px-4 text-zinc-500 italic font-medium max-w-xs truncate">
+                                  {mov.reason || "—"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <TablePagination
+                      currentPage={movementsPagination.currentPage}
+                      pageSize={movementsPagination.pageSize}
+                      totalItems={movementsPagination.totalItems}
+                      onPageChange={movementsPagination.setCurrentPage}
+                      onPageSizeChange={movementsPagination.setPageSize}
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>

@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, pgEnum, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, pgEnum, jsonb, unique } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
 
 // Enums
@@ -37,21 +37,27 @@ export const inventoryItems = pgTable("inventory_items", {
 });
 
 // Branch Inventory
-export const branchInventory = pgTable("branch_inventory", {
-  branchInventoryId: serial("branch_inventory_id").primaryKey(),
-  branchId: integer("branch_id")
-    .references(() => branches.branchId, { onDelete: "cascade" })
-    .notNull(),
-  itemId: integer("item_id")
-    .references(() => inventoryItems.itemId, { onDelete: "cascade" })
-    .notNull(),
-  currentStock: integer("current_stock").default(0).notNull(),
-  status: stockStatusEnum("status").default("OUT_OF_STOCK").notNull(),
-  lastUpdated: timestamp("last_updated")
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
+export const branchInventory = pgTable(
+  "branch_inventory",
+  {
+    branchInventoryId: serial("branch_inventory_id").primaryKey(),
+    branchId: integer("branch_id")
+      .references(() => branches.branchId, { onDelete: "cascade" })
+      .notNull(),
+    itemId: integer("item_id")
+      .references(() => inventoryItems.itemId, { onDelete: "cascade" })
+      .notNull(),
+    currentStock: integer("current_stock").default(0).notNull(),
+    status: stockStatusEnum("status").default("OUT_OF_STOCK").notNull(),
+    lastUpdated: timestamp("last_updated")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("branch_item_unique").on(table.branchId, table.itemId),
+  ]
+);
 
 // Session Log (Attendance)
 export const sessionLog = pgTable("session_log", {
@@ -182,3 +188,18 @@ export const inventoryUsageLog = pgTable("inventory_usage_log", {
   remarks: text("remarks"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Salary Matrix Tiers
+export const salaryMatrix = pgTable("salary_matrix", {
+  tierId: serial("tier_id").primaryKey(),
+  minPlates: integer("min_plates").notNull(),
+  maxPlates: integer("max_plates"),
+  salary: integer("salary").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+

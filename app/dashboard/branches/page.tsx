@@ -20,6 +20,7 @@ import {
   useUpdateBranchMutation,
   useDeleteBranchMutation,
 } from "@/lib/queries";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import type { Branch, CreateBranchInput } from "@/lib/types";
 
 const EMPTY_FORM: CreateBranchInput = {
@@ -31,6 +32,15 @@ export default function BranchesPage() {
   const { data, isLoading } = useBranchesQuery();
   const branches = data?.branches || [];
   const dialog = useGlobalDialog();
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    paginatedItems: paginatedBranches,
+  } = usePagination(branches, 10);
 
   const createMutation = useCreateBranchMutation();
   const updateMutation = useUpdateBranchMutation();
@@ -118,58 +128,67 @@ export default function BranchesPage() {
           ) : branches.length === 0 ? (
             <p className="text-xs text-zinc-500 py-6 text-center">No branches found.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                    {/* <th className="py-3 px-4 font-semibold">ID</th> */}
-                    <th className="py-3 px-4 font-semibold">Branch Name</th>
-                    <th className="py-3 px-4 font-semibold">Address / Location</th>
-                    <th className="py-3 px-4 text-right font-semibold">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {branches.map((branch) => (
-                    <tr
-                      key={branch.branchId}
-                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
-                    >
-                      {/* <td className="py-3 px-4 font-mono text-zinc-500 font-semibold">#{branch.branchId}</td> */}
-                      <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
-                        {branch.branchName}
-                      </td>
-                      <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 font-medium">{branch.address || "—"}</td>
-                      <td className="py-3 px-4 text-right">
-                        <div className="flex justify-end gap-1">
-                          <ActionTooltip label="Edit Branch">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => openEdit(branch)}
-                              aria-label="Edit Branch"
-                            >
-                              <Pen size={15} />
-                            </Button>
-                          </ActionTooltip>
-                          <ActionTooltip label="Delete Branch">
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => handleDelete(branch)}
-                              disabled={deleteMutation.isPending}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
-                              aria-label="Delete Branch"
-                            >
-                              <Trash2 size={15} />
-                            </Button>
-                          </ActionTooltip>
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
+                      {/* <th className="py-3 px-4 font-semibold">ID</th> */}
+                      <th className="py-3 px-4 font-semibold">Branch Name</th>
+                      <th className="py-3 px-4 font-semibold">Address / Location</th>
+                      <th className="py-3 px-4 text-right font-semibold">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                    {paginatedBranches.map((branch) => (
+                      <tr
+                        key={branch.branchId}
+                        className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
+                      >
+                        {/* <td className="py-3 px-4 font-mono text-zinc-500 font-semibold">#{branch.branchId}</td> */}
+                        <td className="py-3 px-4 font-semibold text-zinc-900 dark:text-zinc-100">
+                          {branch.branchName}
+                        </td>
+                        <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 font-medium">{branch.address || "—"}</td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex justify-end gap-1">
+                            <ActionTooltip label="Edit Branch">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => openEdit(branch)}
+                                aria-label="Edit Branch"
+                              >
+                                <Pen size={15} />
+                              </Button>
+                            </ActionTooltip>
+                            <ActionTooltip label="Delete Branch">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => handleDelete(branch)}
+                                disabled={deleteMutation.isPending}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                aria-label="Delete Branch"
+                              >
+                                <Trash2 size={15} />
+                              </Button>
+                            </ActionTooltip>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <TablePagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            </>
           )}
         </CardContent>
       </Card>

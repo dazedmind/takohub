@@ -32,6 +32,7 @@ import type {
   OrderStatus,
 } from "@/lib/types";
 import { formatPeso } from "@/lib/business-logic";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 
 export default function OrdersPage() {
   const { user } = useSessionContext();
@@ -195,6 +196,19 @@ export default function OrdersPage() {
     if (activeTab === "ALL") return true;
     return o.status === activeTab;
   });
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    paginatedItems: paginatedOrders,
+  } = usePagination(filteredOrders, 10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">
@@ -424,7 +438,8 @@ export default function OrdersPage() {
                 No orders found for this status.
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
@@ -438,7 +453,7 @@ export default function OrdersPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    {filteredOrders.map((order) => (
+                    {paginatedOrders.map((order) => (
                       <tr
                         key={order.orderId}
                         className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors"
@@ -494,7 +509,15 @@ export default function OrdersPage() {
                   </tbody>
                 </table>
               </div>
-            )}
+              <TablePagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            </>
+          )}
           </CardContent>
         </Card>
       </div>

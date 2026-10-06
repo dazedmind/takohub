@@ -7,7 +7,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useSessionContext } from "@/components/providers/session-provider";
 import { formatPeso, formatShortOver } from "@/lib/business-logic";
 import { useBranchesQuery, useSalesQuery, useActiveShiftQuery } from "@/lib/queries";
-import { Eye, Lock } from "lucide-react";
+import { Eye, Lock, RotateCcw } from "lucide-react";
 import { ActionTooltip } from "@/components/ui/tooltip";
 import type { SessionUser } from "@/lib/types";
 import {
@@ -18,6 +18,57 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
+
+type DatePreset = "daily" | "weekly" | "monthly" | "annually";
+
+function formatDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function getPresetDateRange(preset: DatePreset): { startDate: string; endDate: string } {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const d = now.getDate();
+
+  switch (preset) {
+    case "daily": {
+      const todayStr = formatDateStr(now);
+      return { startDate: todayStr, endDate: todayStr };
+    }
+    case "weekly": {
+      // Monday to Sunday of current week (ISO week)
+      const day = now.getDay();
+      const diffToMonday = (day + 6) % 7;
+      const monday = new Date(y, m, d - diffToMonday);
+      const sunday = new Date(y, m, d - diffToMonday + 6);
+      return {
+        startDate: formatDateStr(monday),
+        endDate: formatDateStr(sunday),
+      };
+    }
+    case "monthly": {
+      const firstDay = new Date(y, m, 1);
+      const lastDay = new Date(y, m + 1, 0);
+      return {
+        startDate: formatDateStr(firstDay),
+        endDate: formatDateStr(lastDay),
+      };
+    }
+    case "annually": {
+      const firstDay = new Date(y, 0, 1);
+      const lastDay = new Date(y, 11, 31);
+      return {
+        startDate: formatDateStr(firstDay),
+        endDate: formatDateStr(lastDay),
+      };
+    }
+  }
+}
 
 export default function SalesPage() {
   const { user } = useSessionContext();
@@ -28,6 +79,37 @@ export default function SalesPage() {
 
   const isBS = user?.role === "BS";
   const isAdmin = user?.role === "ADMIN";
+
+  const currentActivePreset = (() => {
+    if (!startDate || !endDate) return null;
+    const presets: DatePreset[] = ["daily", "weekly", "monthly", "annually"];
+    for (const p of presets) {
+      const range = getPresetDateRange(p);
+      if (startDate === range.startDate && endDate === range.endDate) {
+        return p;
+      }
+    }
+    return null;
+  })();
+
+  const handlePresetSelect = (preset: DatePreset) => {
+    if (currentActivePreset === preset) {
+      setStartDate("");
+      setEndDate("");
+    } else {
+      const { startDate: start, endDate: end } = getPresetDateRange(preset);
+      setStartDate(start);
+      setEndDate(end);
+    }
+  };
+
+  const hasActiveFilters = Boolean(selectedBranch || startDate || endDate);
+
+  const handleResetFilters = () => {
+    setSelectedBranch("");
+    setStartDate("");
+    setEndDate("");
+  };
 
   const { data: activeShiftData } = useActiveShiftQuery();
   const hasActiveShift = !!activeShiftData?.activeShift;
@@ -43,13 +125,43 @@ export default function SalesPage() {
   });
 
   const sales = salesData?.sales || [];
+
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    paginatedItems: paginatedSales,
+  } = usePagination(sales, 10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedBranch, startDate, endDate]);
+
   const summary = salesData?.summary || {
     totalRevenue: 0,
     totalPlates: 0,
     totalSalary: 0,
     totalExpenses: 0,
+    totalNetSales: 0,
     recordCount: 0,
   };
+
+  const netSalesTotal =
+    summary.totalNetSales ??
+    sales.reduce(
+      (sum: number, s: any) =>
+        sum +
+        (s.netSales ??
+          ((s.totalSales || 0) -
+            (s.expenses || 0) -
+            (s.salary || 0) -
+            (s.free || 0) -
+            (s.shortOver || 0) -
+            (Number(s.trashLeftover) || 0))),
+      0
+    );
 
   return (
     <div className="space-y-6">
@@ -115,18 +227,6 @@ export default function SalesPage() {
 
         <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           <CardHeader className="pb-1 pt-4 px-4">
-            <CardTitle className="text-xs font-medium text-zinc-500">Total Salary</CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
-            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-              {formatPeso(summary.totalSalary)}
-            </div>
-            <p className="text-[11px] text-zinc-500 mt-0.5">Salary matrix payouts</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-          <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-xs font-medium text-zinc-500">Total Expenses</CardTitle>
           </CardHeader>
           <CardContent className="px-4 pb-4">
@@ -136,12 +236,73 @@ export default function SalesPage() {
             <p className="text-[11px] text-zinc-500 mt-0.5">Branch disbursements</p>
           </CardContent>
         </Card>
+
+        <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <CardHeader className="pb-1 pt-4 px-4">
+            <CardTitle className="text-xs font-medium text-zinc-500">Net Sales</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+              {formatPeso(netSalesTotal)}
+            </div>
+            <p className="text-[11px] text-zinc-500 mt-0.5">After deductions & payouts</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filter Bar */}
       <Card className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+        <CardContent className="p-4 space-y-3">
+          {/* Preset Buttons & Reset Filter */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(
+                [
+                  { id: "daily", label: "Daily" },
+                  { id: "weekly", label: "Weekly" },
+                  { id: "monthly", label: "Monthly" },
+                  { id: "annually", label: "Annually" },
+                ] as const
+              ).map((preset) => {
+                const isActive = currentActivePreset === preset.id;
+                return (
+                  <Button
+                    key={preset.id}
+                    type="button"
+                    size="xs"
+                    variant={isActive ? "primary" : "outline"}
+                    onClick={() => handlePresetSelect(preset.id)}
+                    className={
+                      isActive
+                        ? "shadow-sm font-semibold"
+                        : "text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    }
+                  >
+                    {preset.label}
+                  </Button>
+                );
+              })}
+            </div>
+
+            {hasActiveFilters && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="xs"
+                onClick={handleResetFilters}
+                className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30 font-medium"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1" />
+                Reset Filters
+              </Button>
+            )}
+          </div>
+
+          <div
+            className={`grid grid-cols-1 ${
+              !isBS ? "sm:grid-cols-3" : "sm:grid-cols-2"
+            } gap-3 text-xs`}
+          >
             {!isBS && (
               <div>
                 <label className="text-zinc-500 block mb-1">Branch</label>
@@ -191,27 +352,28 @@ export default function SalesPage() {
           ) : sales.length === 0 ? (
             <p className="text-xs text-zinc-500 py-6 text-center">No sales records found.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
-                    <th className="py-3 px-4 font-semibold">Date</th>
-                    <th className="py-3 px-4 font-semibold">Branch</th>
+                    <th className="py-3 px-4 font-semibold w-30">Date</th>
+                    {/* <th className="py-3 px-4 font-semibold">Branch</th> */}
                     <th className="py-3 px-4 font-semibold">Seller</th>
                     <th className="py-3 px-4 font-semibold text-center">Plates (Ch/Oct/Cr)</th>
                     <th className="py-3 px-4 font-semibold text-center">Total Plates</th>
-                    <th className="py-3 px-4 font-semibold text-right">Total Sales (Gross)</th>
+                    <th className="py-3 px-4 font-semibold text-right">Gross Sales</th>
                     {/* <th className="py-3 px-4 font-semibold text-right">Gross</th> */}
-                    <th className="py-3 px-4 font-semibold text-right">Net</th>
                     <th className="py-3 px-4 font-semibold text-right">Salary</th>
                     <th className="py-3 px-4 font-semibold text-right">Cash / GCash</th>
+                    <th className="py-3 px-4 font-semibold text-right">Net Sales</th>
                     <th className="py-3 px-4 font-semibold text-center">Short / Over</th>
                     <th className="py-3 px-4 font-semibold">Notes</th>
                     <th className="py-3 px-4 font-semibold text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {sales.map((s: any) => {
+                  {paginatedSales.map((s: any) => {
                     const shortOverInfo = formatShortOver(s.shortOver || 0);
                     return (
                       <tr
@@ -225,9 +387,15 @@ export default function SalesPage() {
                             year: "numeric",
                           })}
                         </td>
-                        <td className="py-3 px-4 font-semibold">{s.branchName}</td>
+                        {/* <td className="py-3 px-4 font-semibold">{s.branchName}</td> */}
                         <td className="py-3 px-4 text-zinc-900 dark:text-zinc-100 font-semibold">
-                          {s.userName}
+                          {/* {s.userName} */}
+                          <span className="">
+                            <p className="font-bold">{s.branchName}</p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                              {s.userName}
+                            </p>
+                          </span>
                         </td>
                         <td className="py-3 px-4 text-center text-zinc-600 dark:text-zinc-400 font-mono">
                           {s.cheese} / {s.octobits} / {s.crab}
@@ -241,14 +409,14 @@ export default function SalesPage() {
                         {/* <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
                           {formatPeso(s.grossSales ?? s.totalSales)}
                         </td> */}
-                        <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
-                          {formatPeso(s.netSales ?? (s.totalSales - s.expenses - (s.free || 0) - (s.shortOver || 0) - (Number(s.trashLeftover) || 0)))}
-                        </td>
                         <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100">
                           {formatPeso(s.salary)}
                         </td>
                         <td className="py-3 px-4 text-right text-zinc-600 dark:text-zinc-400 font-mono text-xs">
                           {formatPeso(s.cashOnhand)} / {formatPeso(s.gcashPayment)}
+                        </td>
+                        <td className="py-3 px-4 text-right font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
+                          {formatPeso(s.netSales ?? (s.totalSales - s.expenses - (s.salary || 0) - (s.free || 0) - (s.shortOver || 0) - (Number(s.trashLeftover) || 0)))}
                         </td>
                         <td className="py-3 px-4 text-center">
                           <span
@@ -263,7 +431,7 @@ export default function SalesPage() {
                             {shortOverInfo.text}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 italic max-w-xs truncate font-medium">
+                        <td className="py-3 px-4 text-zinc-600 dark:text-zinc-400 max-w-xs text-wrap font-medium">
                           {s.remarks || s.trashLeftover || "—"}
                         </td>
                         <td className="py-3 px-4 text-center">
@@ -285,7 +453,15 @@ export default function SalesPage() {
                 </tbody>
               </table>
             </div>
-          )}
+            <TablePagination
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
+          </>
+        )}
         </CardContent>
       </Card>
       </>
@@ -363,6 +539,10 @@ export default function SalesPage() {
                     <span className="font-mono text-red-600">-{formatPeso(viewingSale.expenses)}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-zinc-500">Salary</span>
+                    <span className="font-mono text-red-600">-{formatPeso(viewingSale.salary)}</span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-zinc-500">Free B-Box</span>
                     <span className="font-mono text-zinc-600">-{formatPeso(viewingSale.free)}</span>
                   </div>
@@ -376,10 +556,10 @@ export default function SalesPage() {
                     <span className="text-zinc-500">Trash / Left Over</span>
                     <span className="font-mono text-zinc-600">-{formatPeso(Number(viewingSale.trashLeftover) || 0)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-zinc-100 dark:border-zinc-800 pt-1.5 font-semibold text-sm">
+                  <div className="flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800 pt-1.5 font-semibold text-sm">
                     <span className="text-zinc-800 dark:text-zinc-200">Net Sales</span>
-                    <span className="font-mono text-zinc-900 dark:text-zinc-100">
-                      {formatPeso(viewingSale.netSales ?? (viewingSale.totalSales - viewingSale.expenses - (viewingSale.free || 0) - (viewingSale.shortOver || 0) - (Number(viewingSale.trashLeftover) || 0)))}
+                    <span className="font-bold text-lg text-zinc-900 dark:text-zinc-100">
+                      {formatPeso(viewingSale.netSales ?? (viewingSale.totalSales - viewingSale.expenses - (viewingSale.salary || 0) - (viewingSale.free || 0) - (viewingSale.shortOver || 0) - (Number(viewingSale.trashLeftover) || 0)))}
                     </span>
                   </div>
                 </div>

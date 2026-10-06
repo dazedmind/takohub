@@ -12,6 +12,9 @@ import type {
   OrderWithDetails,
   UpdateInventoryInput,
   User,
+  SalaryTier,
+  CreateSalaryTierInput,
+  UpdateSalaryTierInput,
 } from "@/lib/types";
 
 // ==========================================
@@ -444,3 +447,95 @@ export function useDeleteUserMutation() {
     },
   });
 }
+
+// ==========================================
+// 10. Salary Matrix Queries & Mutations
+// ==========================================
+export function useSalaryMatrixQuery() {
+  return useQuery<{ tiers: SalaryTier[] }>({
+    queryKey: ["salary-matrix"],
+    queryFn: async () => {
+      const res = await fetch("/api/salary");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to load salary matrix");
+      }
+      return res.json();
+    },
+  });
+}
+
+export function useCreateSalaryTierMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateSalaryTierInput) => {
+      const res = await fetch("/api/salary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create salary tier");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["salary-matrix"] });
+    },
+  });
+}
+
+export function useUpdateSalaryTierMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      tierId,
+      data,
+    }: {
+      tierId: number;
+      data: UpdateSalaryTierInput;
+    }) => {
+      const res = await fetch(`/api/salary/${tierId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || "Failed to update salary tier");
+      return resData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["salary-matrix"] });
+    },
+  });
+}
+
+export function useDeleteSalaryTierMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tierId: number) => {
+      const res = await fetch(`/api/salary/${tierId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete salary tier");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["salary-matrix"] });
+    },
+  });
+}
+
+export function useResetSalaryMatrixMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/salary/reset", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset salary matrix");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["salary-matrix"] });
+    },
+  });
+}
+

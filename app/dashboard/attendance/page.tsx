@@ -17,6 +17,7 @@ import {
   useBranchesQuery,
   useUsersQuery,
 } from "@/lib/queries";
+import { TablePagination, usePagination } from "@/components/ui/table-pagination";
 import type { ActiveEmployeeShift, SessionUser } from "@/lib/types";
 
 export default function AttendancePage() {
@@ -56,8 +57,18 @@ export default function AttendancePage() {
   const { data: attendanceData, isLoading } = useAttendanceHistoryQuery(appliedFilters);
   const records = attendanceData?.records || [];
 
+  const {
+    currentPage,
+    setCurrentPage,
+    pageSize,
+    setPageSize,
+    totalItems,
+    paginatedItems: paginatedRecords,
+  } = usePagination(records, 10);
+
   const handleApplyFilters = (e: React.FormEvent) => {
     e.preventDefault();
+    setCurrentPage(1);
     setAppliedFilters({
       date: filterDate || undefined,
       userId: filterEmployee || undefined,
@@ -73,6 +84,7 @@ export default function AttendancePage() {
     setFilterRole("");
     setFilterBranch("");
     setFilterStatus("");
+    setCurrentPage(1);
     setAppliedFilters({});
   };
 
@@ -234,7 +246,8 @@ export default function AttendancePage() {
               No attendance records found matching the filters.
             </p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 text-left text-zinc-600 dark:text-zinc-400">
@@ -250,7 +263,7 @@ export default function AttendancePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {records.map((rec: any) => {
+                  {paginatedRecords.map((rec: any) => {
                     const empInitial = (rec.userName || "U").charAt(0).toUpperCase();
                     return (
                       <tr
@@ -358,6 +371,14 @@ export default function AttendancePage() {
                 </tbody>
               </table>
             </div>
+              <TablePagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+              />
+            </>
           )}
         </CardContent>
       </Card>

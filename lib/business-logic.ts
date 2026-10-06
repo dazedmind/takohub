@@ -51,6 +51,22 @@ export function calculateTotalSales(totalPlates: number): number {
  * | 60+         | ₱1,900 + ₱250 = ₱2,150 |
  * | 0           | ₱0     |
  */
+export const DEFAULT_SALARY_MATRIX = [
+  { minPlates: 1, maxPlates: 5, salary: 400, description: "1–5 plates" },
+  { minPlates: 6, maxPlates: 10, salary: 500, description: "6–10 plates" },
+  { minPlates: 11, maxPlates: 15, salary: 650, description: "11–15 plates" },
+  { minPlates: 16, maxPlates: 20, salary: 750, description: "16–20 plates" },
+  { minPlates: 21, maxPlates: 25, salary: 850, description: "21–25 plates" },
+  { minPlates: 26, maxPlates: 29, salary: 950, description: "26–29 plates" },
+  { minPlates: 30, maxPlates: 35, salary: 1300, description: "30–35 plates" },
+  { minPlates: 36, maxPlates: 40, salary: 1400, description: "36–40 plates" },
+  { minPlates: 41, maxPlates: 45, salary: 1500, description: "41–45 plates" },
+  { minPlates: 46, maxPlates: 50, salary: 1600, description: "46–50 plates" },
+  { minPlates: 51, maxPlates: 55, salary: 1700, description: "51–55 plates" },
+  { minPlates: 56, maxPlates: 59, salary: 1800, description: "56–59 plates" },
+  { minPlates: 60, maxPlates: null, salary: 2150, description: "60+ plates" },
+];
+
 export function calculateSalary(totalPlates: number): number {
   const plates = Math.max(0, Number(totalPlates) || 0);
 
@@ -70,6 +86,27 @@ export function calculateSalary(totalPlates: number): number {
   if (plates >= 60) return 2150; // 1,900 + 250
 
   return 0;
+}
+
+/**
+ * Calculate salary dynamically from a given custom salary matrix
+ */
+export function calculateSalaryFromMatrix(
+  totalPlates: number,
+  matrix?: Array<{ minPlates: number; maxPlates: number | null; salary: number }> | null
+): number {
+  const plates = Math.max(0, Number(totalPlates) || 0);
+  if (plates === 0) return 0;
+  if (!matrix || matrix.length === 0) {
+    return calculateSalary(plates);
+  }
+  const sorted = [...matrix].sort((a, b) => a.minPlates - b.minPlates);
+  const tier = sorted.find(
+    (t) =>
+      plates >= t.minPlates &&
+      (t.maxPlates === null || t.maxPlates === undefined || plates <= t.maxPlates)
+  );
+  return tier ? tier.salary : 0;
 }
 
 /**
@@ -123,17 +160,17 @@ export function formatShortOver(amount: number): {
   text: string;
   className: string;
 } {
-  if (amount < 0) {
+  if (amount > 0) {
     return {
       type: "SHORT",
-      text: `Short: ${formatPeso(Math.abs(amount))}`,
+      text: `Short: ${formatPeso(amount)}`,
       className: "text-red-600 dark:text-red-400 font-semibold",
     };
   }
-  if (amount > 0) {
+  if (amount < 0) {
     return {
       type: "OVER",
-      text: `Over: ${formatPeso(amount)}`,
+      text: `Over: ${formatPeso(Math.abs(amount))}`,
       className: "text-emerald-600 dark:text-emerald-400 font-semibold",
     };
   }
@@ -157,4 +194,26 @@ export function calculateShortOver(
 ): number {
   return (cashOnHand || 0) + (gcashPayment || 0) + (expenses || 0) + (salary || 0) - totalSales;
 }
+
+/**
+ * Calculate net sales deducting expenses, salary, free b-box, short/over, and trash/leftover from gross sales
+ */
+export function calculateNetSales(
+  grossSales: number,
+  expenses: number,
+  salary: number,
+  free: number = 0,
+  shortOver: number = 0,
+  trashLeftover: number = 0
+): number {
+  return (
+    (grossSales || 0) -
+    (expenses || 0) -
+    (salary || 0) -
+    (free || 0) -
+    (shortOver || 0) -
+    (trashLeftover || 0)
+  );
+}
+
 
