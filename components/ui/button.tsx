@@ -29,6 +29,9 @@ const buttonVariants = cva(
           "bg-gradient-to-b from-red-500 to-red-700 text-white border border-red-700/60  hover:from-red-400 hover:to-red-600 active:from-red-600 active:to-red-800 active:shadow-inner",
         destructive:
           "bg-gradient-to-b from-red-500 to-red-700 text-white border border-red-700/60  hover:from-red-400 hover:to-red-600 active:from-red-600 active:to-red-800 active:shadow-inner",
+        // Orange with bottom-down gradient & button bevel
+        orange:
+          "bg-gradient-to-b from-[#ff8c42] via-[#f97316] to-[#ea580c] text-white border border-[#c2410c]/70 hover:from-[#ffa05c] hover:to-[#dc4d04] active:from-[#ea580c] active:to-[#c2410c] active:shadow-inner",
         link: "text-zinc-900 dark:text-zinc-100 underline-offset-4 hover:underline",
       },
       size: {

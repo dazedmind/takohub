@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { sales, branches, sessionLog } from "@/app/db/schema";
+import { sales, branches, sessionLog, expenses } from "@/app/db/schema";
 import { user as userTable } from "@/app/db/auth-schema";
 import { requireAuth, isAuthError } from "@/lib/auth-utils";
 
@@ -70,12 +70,58 @@ export async function GET(request: Request) {
       .where(whereClause)
       .orderBy(desc(sales.date));
 
+    // Query expenses from the expenses table matching the same branch and date filters
+    const expenseConditions = [];
+    if (currentUser.role === "BS") {
+      // Branch seller only sees their branch
+      if (currentUser.branchId) {
+        expenseConditions.push(eq(expenses.branchId, currentUser.branchId));
+      }
+    } else if (branchIdParam) {
+      expenseConditions.push(eq(expenses.branchId, Number(branchIdParam)));
+    }
+
+    if (startDateParam) {
+      const start = new Date(startDateParam);
+      start.setHours(0, 0, 0, 0);
+      expenseConditions.push(gte(expenses.date, start));
+    }
+
+    if (endDateParam) {
+      const end = new Date(endDateParam);
+      end.setHours(23, 59, 59, 999);
+      expenseConditions.push(lte(expenses.date, end));
+    }
+
+    const expenseWhereClause = expenseConditions.length > 0 ? and(...expenseConditions) : undefined;
+    const allExpensesInPeriod = await db
+      .select({
+        expenseId: expenses.expenseId,
+        amount: expenses.amount,
+        sessionId: expenses.sessionId,
+      })
+      .from(expenses)
+      .where(expenseWhereClause);
+
+    const shiftSessionIds = new Set(rows.map((r) => r.sessionId).filter(Boolean));
+
+    // Shift expenses from sales records
+    const shiftExpenses = rows.reduce((sum, r) => sum + (r.expenses || 0), 0);
+
+    // Standalone expenses (e.g. entered in Expenses module by Admin, not linked to a shift row)
+    const standaloneExpenses = allExpensesInPeriod
+      .filter((e) => !e.sessionId || !shiftSessionIds.has(e.sessionId))
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    // Total expenses across shifts and standalone expense entries
+    const totalExpenses = shiftExpenses + standaloneExpenses;
+
     // Summary totals
     const totalRevenue = rows.reduce((sum, r) => sum + (r.totalSales || 0), 0);
     const totalPlates = rows.reduce((sum, r) => sum + (r.totalPlates || 0), 0);
     const totalSalary = rows.reduce((sum, r) => sum + (r.salary || 0), 0);
-    const totalExpenses = rows.reduce((sum, r) => sum + (r.expenses || 0), 0);
-    const totalNetSales = rows.reduce(
+
+    const shiftNetSales = rows.reduce(
       (sum, r) =>
         sum +
         (r.netSales ??
@@ -88,12 +134,17 @@ export async function GET(request: Request) {
       0
     );
 
+    // Total Net Sales deducting all expenses (shift expenses + standalone expenses)
+    const totalNetSales = shiftNetSales - standaloneExpenses;
+
     return NextResponse.json({
       sales: rows,
       summary: {
         totalRevenue,
         totalPlates,
         totalSalary,
+        shiftExpenses,
+        standaloneExpenses,
         totalExpenses,
         totalNetSales,
         recordCount: rows.length,

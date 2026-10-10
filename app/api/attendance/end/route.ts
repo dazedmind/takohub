@@ -1,6 +1,6 @@
 import { db } from "../../../../lib/db";
 import { and, eq } from "drizzle-orm";
-import { sessionLog, sales, branchInventory, inventoryUsageLog, inventoryItems, salesRemarks, salaryMatrix } from "../../../db/schema";
+import { sessionLog, sales, branchInventory, inventoryUsageLog, inventoryItems, salesRemarks, salaryMatrix, expenses } from "../../../db/schema";
 import { requireAuth } from "../../../../lib/auth-utils";
 import { calculateTotalPlates, calculateTotalSales, calculateSalary, calculateShortOver, calculateNetSales, calculateSalaryFromMatrix } from "../../../../lib/business-logic";
 
@@ -74,6 +74,20 @@ export async function POST(request: Request) {
         })
         .returning();
 
+      // Log to expenses table if branch seller had expenses
+      if (expenses > 0) {
+        await db.insert(expenses).values({
+          amount: expenses,
+          category: "Store Operations",
+          description: remarksText.trim() || `Branch Seller shift expense (Branch #${activeShift.branchId})`,
+          branchId: activeShift.branchId,
+          userId: session.id,
+          sessionId: activeShift.sessionId,
+          date: endTime,
+          createdAt: endTime,
+        });
+      }
+
       // Automatically deduct branch inventory for Paper Plates (itemId 9) and Toothpicks (itemId 10)
       // Paper Plates: 1 pc per plate sold (including free plates)
       // Toothpicks: 1 box/pcs or similar. Let's deduct 1 pc of plates and 1 pc of toothpicks per plate sold.
@@ -137,8 +151,11 @@ export async function POST(request: Request) {
     } else {
       // Inventory Manager (IM) or ADMIN ending shift
       const notes = body.eodReport || body.notes || "No EOD report notes provided.";
+      const expensesAmount = Math.max(0, parseInt(body.expenses || 0, 10));
+      const expenseCategory = body.expenseCategory || "Inventory / Operations";
+      const expenseDescription = (body.expenseNotes || body.expenseDescription || "").trim() || notes.trim();
 
-      // For managers/admins, create a Sales record where remarks stores the EOD notes, and other stats are 0
+      // For managers/admins, create a Sales record where remarks stores the EOD notes, and expenses are logged
       const [salesRecord] = await db
         .insert(sales)
         .values({
@@ -151,16 +168,32 @@ export async function POST(request: Request) {
           totalPlates: 0,
           totalSales: 0,
           cashOnhand: 0,
-          expenses: 0,
+          expenses: expensesAmount,
           salary: 0,
           gcashPayment: 0,
           free: 0,
           shortOver: 0,
           trashLeftover: 0,
+          grossSales: 0,
+          netSales: -expensesAmount,
           remarks: notes.trim(),
           date: endTime,
         })
         .returning();
+
+      // Log to expenses table if expenses were logged
+      if (expensesAmount > 0) {
+        await db.insert(expenses).values({
+          amount: expensesAmount,
+          category: expenseCategory,
+          description: expenseDescription || `IM Shift Handover Expense: ${notes.trim()}`,
+          branchId: activeShift.branchId,
+          userId: session.id,
+          sessionId: activeShift.sessionId,
+          date: endTime,
+          createdAt: endTime,
+        });
+      }
 
       // Update shift status
       await db

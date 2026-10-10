@@ -143,6 +143,8 @@ export default function SalesPage() {
     totalRevenue: 0,
     totalPlates: 0,
     totalSalary: 0,
+    shiftExpenses: 0,
+    standaloneExpenses: 0,
     totalExpenses: 0,
     totalNetSales: 0,
     recordCount: 0,
@@ -233,7 +235,11 @@ export default function SalesPage() {
             <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               {formatPeso(summary.totalExpenses)}
             </div>
-            <p className="text-[11px] text-zinc-500 mt-0.5">Branch disbursements</p>
+            <p className="text-[11px] text-zinc-500 mt-0.5">
+              {summary.standaloneExpenses > 0
+                ? `${formatPeso(summary.shiftExpenses || 0)} shift + ${formatPeso(summary.standaloneExpenses)} recorded`
+                : "Branch disbursements & expenses"}
+            </p>
           </CardContent>
         </Card>
 
@@ -245,7 +251,7 @@ export default function SalesPage() {
             <div className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               {formatPeso(netSalesTotal)}
             </div>
-            <p className="text-[11px] text-zinc-500 mt-0.5">After deductions & payouts</p>
+            <p className="text-[11px] text-zinc-500 mt-0.5">After deductions, payouts & expenses</p>
           </CardContent>
         </Card>
       </div>

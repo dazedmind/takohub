@@ -24,6 +24,7 @@ import {
   LogOut,
   Lock,
   Banknote,
+  Wallet,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useActiveShiftQuery } from "@/lib/queries";
@@ -51,6 +52,7 @@ const MENU_CONFIG: Record<
     { name: "Orders", href: "/dashboard/orders", icon: <ShoppingCart size={20} /> },
     { name: "Attendance", href: "/dashboard/attendance", icon: <Clock size={20} /> },
     { name: "Sales", href: "/dashboard/sales", icon: <Receipt size={20} /> },
+    { name: "Expenses", href: "/dashboard/expenses", icon: <Wallet size={20} /> },
     { name: "Salary", href: "/dashboard/salary", icon: <Banknote size={20} /> },
     { name: "Branches", href: "/dashboard/branches", icon: <Store size={20} /> },
     { name: "Users", href: "/dashboard/users", icon: <Users size={20} /> },

@@ -10,6 +10,7 @@ import { formatPeso } from "@/lib/business-logic";
 import { ActiveShiftCard } from "@/components/active-shift-card";
 import { CameraModal } from "@/components/camera-modal";
 import { SalesLogModal } from "@/components/sales-log-modal";
+import { ForceEndShiftModal } from "@/components/force-end-shift-modal";
 import { SelfieViewDialog } from "@/components/selfie-view-dialog";
 import {
   useActiveShiftQuery,
@@ -29,6 +30,7 @@ export default function DashboardHome() {
   // Modals state
   const [cameraModalOpen, setCameraModalOpen] = useState(false);
   const [salesLogModalOpen, setSalesLogModalOpen] = useState(false);
+  const [forceEndShift, setForceEndShift] = useState<ActiveEmployeeShift | null>(null);
   const [selfieViewShift, setSelfieViewShift] = useState<ActiveEmployeeShift | null>(null);
 
   const isAdmin = user?.role === "ADMIN";
@@ -89,7 +91,38 @@ export default function DashboardHome() {
     };
   }, [isAdmin]);
 
-  const handleRefresh = () => {
+  const handleRefresh = (endedSessionId?: number) => {
+    const targetSessionId = endedSessionId || userActiveShift?.sessionId;
+
+    // 1. Optimistically clear current user's active shift if it was ended
+    if (!endedSessionId || (userActiveShift && userActiveShift.sessionId === targetSessionId)) {
+      queryClient.setQueryData(["attendance", "active"], { activeShift: null });
+    }
+
+    // 2. Optimistically remove the ended shift from admin active shifts and decrement counter
+    if (targetSessionId) {
+      queryClient.setQueryData(["dashboard", "stats"], (old: any) => {
+        if (!old?.stats) return old;
+        const currentActive: ActiveEmployeeShift[] = old.stats.activeShifts || [];
+        const filteredShifts = currentActive.filter((s) => s.sessionId !== targetSessionId);
+        const newCount = Math.max(
+          0,
+          (old.stats.activeEmployeesCount ?? currentActive.length) - 1
+        );
+        return {
+          ...old,
+          stats: {
+            ...old.stats,
+            activeShifts: filteredShifts,
+            activeEmployeesCount: newCount,
+          },
+        };
+      });
+
+      setRealtimeActiveCount((prev) => (prev !== null ? Math.max(0, prev - 1) : null));
+    }
+
+    // 3. Invalidate queries to fetch fresh database state in background
     queryClient.invalidateQueries({ queryKey: ["attendance"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     queryClient.invalidateQueries({ queryKey: ["inventory"] });
@@ -319,6 +352,7 @@ export default function DashboardHome() {
                       shift={shift}
                       isAdminView={true}
                       onViewSelfie={() => setSelfieViewShift(shift)}
+                      onForceEndShift={(s) => setForceEndShift(s)}
                     />
                   ))}
                 </div>
@@ -410,6 +444,14 @@ export default function DashboardHome() {
         onSuccess={handleRefresh}
         activeShift={userActiveShift}
         userRole={user?.role}
+      />
+
+      {/* Admin Force End Shift Modal */}
+      <ForceEndShiftModal
+        isOpen={!!forceEndShift}
+        shift={forceEndShift}
+        onClose={() => setForceEndShift(null)}
+        onSuccess={handleRefresh}
       />
 
       {/* Selfie View Lightbox */}

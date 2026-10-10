@@ -11,6 +11,7 @@ async function main() {
     // Drop tables with cascade to avoid foreign key issues
     const tables = [
       "inventory_usage_log",
+      "expenses",
       "inventory_movements",
       "stock_adjustments",
       "orders",
@@ -213,6 +214,21 @@ async function main() {
         "item_id" INTEGER NOT NULL REFERENCES "inventory_items" ("item_id") ON DELETE CASCADE,
         "quantity_used" INTEGER NOT NULL,
         "remarks" TEXT,
+        "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // Expenses Table
+    await sql.query(`
+      CREATE TABLE "expenses" (
+        "expense_id" SERIAL PRIMARY KEY,
+        "amount" INTEGER NOT NULL,
+        "category" TEXT NOT NULL,
+        "description" TEXT,
+        "branch_id" INTEGER REFERENCES "branches" ("branch_id") ON DELETE CASCADE,
+        "user_id" TEXT NOT NULL REFERENCES "user" ("id") ON DELETE CASCADE,
+        "session_id" INTEGER REFERENCES "session_log" ("session_id") ON DELETE SET NULL,
+        "date" TIMESTAMP NOT NULL DEFAULT NOW(),
         "created_at" TIMESTAMP NOT NULL DEFAULT NOW()
       );
     `);

@@ -1,6 +1,6 @@
 import { db } from "../../../../lib/db";
-import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { sessionLog, orders, inventoryItems, sales, branches } from "../../../db/schema";
+import { eq, and, desc, sql, gte, isNull } from "drizzle-orm";
+import { sessionLog, orders, inventoryItems, sales, branches, expenses } from "../../../db/schema";
 import { user as userTable } from "../../../db/auth-schema";
 import { requireRole } from "../../../../lib/auth-utils";
 
@@ -27,7 +27,15 @@ export async function GET(request: Request) {
       .where(gte(sales.date, todayStart));
     const dailyRevenue = Number(dailyStatsResult[0]?.revenue || 0);
     const dailyGross = Number(dailyStatsResult[0]?.gross || 0);
-    const dailyNet = Number(dailyStatsResult[0]?.net || 0);
+
+    // Standalone expenses today (e.g. from expenses module)
+    const todayExpensesResult = await db
+      .select({ total: sql<number>`COALESCE(sum(${expenses.amount}), 0)` })
+      .from(expenses)
+      .where(and(gte(expenses.date, todayStart), isNull(expenses.sessionId)));
+    const todayStandaloneExpenses = Number(todayExpensesResult[0]?.total || 0);
+
+    const dailyNet = Number(dailyStatsResult[0]?.net || 0) - todayStandaloneExpenses;
     const totalPlatesToday = Number(dailyStatsResult[0]?.plates || 0);
 
     // 2. Weekly Revenue

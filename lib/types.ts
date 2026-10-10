@@ -10,6 +10,7 @@ import type {
   stockAdjustments,
   inventoryMovements,
   salaryMatrix,
+  expenses,
 } from "@/app/db/schema";
 
 export type UserRole = "ADMIN" | "BS" | "IM";
@@ -59,6 +60,15 @@ export type NewInventoryMovement = InferInsertModel<typeof inventoryMovements>;
 
 export type SalaryTier = InferSelectModel<typeof salaryMatrix>;
 export type NewSalaryTier = InferInsertModel<typeof salaryMatrix>;
+
+export type Expense = InferSelectModel<typeof expenses>;
+export type NewExpense = InferInsertModel<typeof expenses>;
+
+export interface ExpenseWithDetails extends Expense {
+  userName?: string;
+  userRole?: UserRole;
+  branchName?: string | null;
+}
 
 
 export interface InventoryMovementWithDetails extends InventoryMovement {
@@ -244,6 +254,22 @@ export interface UpdateSalaryTierInput {
   maxPlates?: number | null;
   salary?: number;
   description?: string;
+}
+
+export interface CreateExpenseInput {
+  amount: number;
+  category: string;
+  description?: string;
+  branchId?: number | null;
+  date?: string | Date;
+}
+
+export interface UpdateExpenseInput {
+  amount?: number;
+  category?: string;
+  description?: string;
+  branchId?: number | null;
+  date?: string | Date;
 }
 
 

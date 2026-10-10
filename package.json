@@ -8,7 +8,9 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
-    "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json --experimental-warm-cdn-cache"
+    "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json --experimental-warm-cdn-cache",
+    "migrate": "tsx scripts/migrate-schema.ts",
+    "migrate:live": "tsx scripts/migrate-schema.ts --live"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

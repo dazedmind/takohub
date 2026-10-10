@@ -19,8 +19,9 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
+    data-slot="dialog-overlay"
     className={cn(
-      "fixed inset-0 z-50 bg-black/50 transition-opacity duration-150 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "dialog-overlay fixed inset-0 z-50 bg-black/55 backdrop-blur-[2px]",
       className
     )}
     {...props}
@@ -36,8 +37,9 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      data-slot="dialog-content"
       className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] sm:w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 sm:p-5 rounded-xl max-h-[calc(100dvh-2.5rem)] overflow-hidden overflow-y-auto scrollbar-none overscroll-contain data-[state=open]:animate-dialog-popup data-[state=closed]:animate-dialog-popout",
+        "dialog-content fixed left-1/2 top-1/2 z-50 grid w-[calc(100%-2rem)] sm:w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 sm:p-5 rounded-xl max-h-[calc(100dvh-2.5rem)] overflow-hidden overflow-y-auto scrollbar-none overscroll-contain shadow-2xl shadow-black/20",
         className
       )}
       {...props}

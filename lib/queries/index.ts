@@ -15,6 +15,9 @@ import type {
   SalaryTier,
   CreateSalaryTierInput,
   UpdateSalaryTierInput,
+  ExpenseWithDetails,
+  CreateExpenseInput,
+  UpdateExpenseInput,
 } from "@/lib/types";
 
 // ==========================================
@@ -535,6 +538,103 @@ export function useResetSalaryMatrixMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["salary-matrix"] });
+    },
+  });
+}
+
+// ==========================================
+// 11. Expenses Queries & Mutations (Admin)
+// ==========================================
+export function useExpensesQuery(filters: {
+  branchId?: string;
+  category?: string;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+}) {
+  return useQuery<{
+    expenses: ExpenseWithDetails[];
+    summary: {
+      totalExpenses: number;
+      todayExpenses: number;
+      monthExpenses: number;
+      recordCount: number;
+    };
+  }>({
+    queryKey: ["expenses", filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters.branchId) params.append("branchId", filters.branchId);
+      if (filters.category && filters.category !== "ALL") params.append("category", filters.category);
+      if (filters.startDate) params.append("startDate", filters.startDate);
+      if (filters.endDate) params.append("endDate", filters.endDate);
+      if (filters.search) params.append("search", filters.search);
+
+      const res = await fetch(`/api/expenses?${params.toString()}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Failed to load expenses");
+      }
+      return res.json();
+    },
+  });
+}
+
+export function useCreateExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: CreateExpenseInput) => {
+      const res = await fetch("/api/expenses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || "Failed to create expense");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    },
+  });
+}
+
+export function useUpdateExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      expenseId,
+      data,
+    }: {
+      expenseId: number;
+      data: UpdateExpenseInput;
+    }) => {
+      const res = await fetch(`/api/expenses/${expenseId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || resData.message || "Failed to update expense");
+      return resData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+    },
+  });
+}
+
+export function useDeleteExpenseMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (expenseId: number) => {
+      const res = await fetch(`/api/expenses/${expenseId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || "Failed to delete expense");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["expenses"] });
     },
   });
 }

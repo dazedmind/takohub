@@ -203,3 +203,18 @@ export const salaryMatrix = pgTable("salary_matrix", {
     .notNull(),
 });
 
+// Expenses
+export const expenses = pgTable("expenses", {
+  expenseId: serial("expense_id").primaryKey(),
+  amount: integer("amount").notNull(),
+  category: text("category").notNull(),
+  description: text("description"),
+  branchId: integer("branch_id").references(() => branches.branchId, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" })
+    .notNull(),
+  sessionId: integer("session_id").references(() => sessionLog.sessionId, { onDelete: "set null" }),
+  date: timestamp("date").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+

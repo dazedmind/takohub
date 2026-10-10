@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Camera, X, RotateCcw } from "lucide-react";
 import { useGlobalDialog } from "@/components/providers/dialog-provider";
@@ -19,6 +20,7 @@ export function CameraModal({
   onSuccess,
   branches: initialBranches = [],
 }: CameraModalProps) {
+  const [mounted, setMounted] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dialog = useGlobalDialog();
@@ -28,6 +30,10 @@ export function CameraModal({
   const [selectedBranchId, setSelectedBranchId] = useState<number | "">("");
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [isStartingShift, setIsStartingShift] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Prevent background scrolling when full screen camera is active
   useEffect(() => {
@@ -164,14 +170,13 @@ export function CameraModal({
         throw new Error(data.message || data.error || "Failed to start shift");
       }
 
+      handleClose();
+      onSuccess();
+
       dialog.show({
         title: "Success",
         message: "Shift started successfully!",
         type: "success",
-        onConfirm: () => {
-          handleClose();
-          onSuccess();
-        }
       });
     } catch (err) {
       dialog.show({
@@ -184,10 +189,10 @@ export function CameraModal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 bg-zinc-950 text-zinc-100 flex flex-col justify-between overflow-hidden">
+  return createPortal(
+    <div className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[100] bg-zinc-950 text-zinc-100 flex flex-col justify-between overflow-hidden animate-overlay-in">
       {/* Top Navbar */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md">
         <div>
@@ -312,6 +317,7 @@ export function CameraModal({
           </Button>
         </div>
       </footer>
-    </div>
+    </div>,
+    document.body
   );
 }

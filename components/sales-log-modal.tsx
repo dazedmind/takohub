@@ -24,7 +24,7 @@ import type { ActiveEmployeeShift } from "@/lib/types";
 interface SalesLogModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (endedSessionId?: number) => void;
   activeShift: ActiveEmployeeShift | null;
   userRole?: string;
 }
@@ -41,24 +41,27 @@ export function SalesLogModal({
   const dialog = useGlobalDialog();
 
   // Branch Seller Sales Fields
-  const [cheese, setCheese] = useState<string>("0");
-  const [octobits, setOctobits] = useState<string>("0");
-  const [crab, setCrab] = useState<string>("0");
-  const [cashOnhand, setCashOnhand] = useState<string>("0");
-  const [expenses, setExpenses] = useState<string>("0");
-  const [gcashPayment, setGcashPayment] = useState<string>("0");
-  const [free, setFree] = useState<string>("0");
-  const [shortVal, setShortVal] = useState<string>("0");
-  const [overVal, setOverVal] = useState<string>("0");
-  const [trashLeftover, setTrashLeftover] = useState<string>("0");
+  const [cheese, setCheese] = useState<string>("");
+  const [octobits, setOctobits] = useState<string>("");
+  const [crab, setCrab] = useState<string>("");
+  const [cashOnhand, setCashOnhand] = useState<string>("");
+  const [expenses, setExpenses] = useState<string>("");
+  const [gcashPayment, setGcashPayment] = useState<string>("");
+  const [free, setFree] = useState<string>("");
+  const [shortVal, setShortVal] = useState<string>("");
+  const [overVal, setOverVal] = useState<string>("");
+  const [trashLeftover, setTrashLeftover] = useState<string>("");
   const [remarks, setRemarks] = useState<string>("");
 
   const shortOver = useMemo(() => {
     return String((Number(shortVal) || 0) - (Number(overVal) || 0));
   }, [shortVal, overVal]);
 
-  // Inventory Manager EOD Report Field
+  // Inventory Manager EOD Report & Expense Fields
   const [eodReport, setEodReport] = useState<string>("");
+  const [imExpenses, setImExpenses] = useState<string>("0");
+  const [imExpenseCategory, setImExpenseCategory] = useState<string>("Inventory / Operations");
+  const [imExpenseNotes, setImExpenseNotes] = useState<string>("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -86,7 +89,7 @@ export function SalesLogModal({
 
   const isValid = useMemo(() => {
     if (isIM) {
-      return true; // EOD report is optional or notes only
+      return Number(imExpenses) >= 0;
     }
     return (
       Number(cheese) >= 0 &&
@@ -101,7 +104,7 @@ export function SalesLogModal({
       Number(overVal) >= 0
       // !tallyDiffers
     );
-  }, [isIM, cheese, octobits, crab, cashOnhand, expenses, gcashPayment, free, trashLeftover, shortVal, overVal]);
+  }, [isIM, imExpenses, cheese, octobits, crab, cashOnhand, expenses, gcashPayment, free, trashLeftover, shortVal, overVal]);
 
   const handleEndShift = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,11 +124,13 @@ export function SalesLogModal({
         ? {
             sessionId: activeShift.sessionId,
             eodReport: eodReport.trim(),
+            expenses: Math.max(0, Number(imExpenses) || 0),
+            expenseCategory: imExpenseCategory,
+            expenseNotes: imExpenseNotes.trim(),
             cheese: 0,
             octobits: 0,
             crab: 0,
             cashOnhand: 0,
-            expenses: 0,
             gcashPayment: 0,
             free: 0,
             shortOver: 0,
@@ -155,14 +160,15 @@ export function SalesLogModal({
         throw new Error(data.error || "Failed to end shift");
       }
 
+      const endedSessionId = activeShift.sessionId;
+      // Close modal and notify immediately so shift is removed without delay
+      onClose();
+      onSuccess(endedSessionId);
+
       dialog.show({
         title: "Success",
         message: isIM ? "Shift ended with EOD Report." : "Shift ended with Sales Log.",
         type: "success",
-        onConfirm: () => {
-          onClose();
-          onSuccess();
-        }
       });
     } catch (error) {
       dialog.show({
@@ -189,16 +195,10 @@ export function SalesLogModal({
             {/* INVENTORY MANAGER VIEW: EOD REPORT ONLY */}
             {isIM ? (
               <div className="space-y-4">
-                <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm text-zinc-600 dark:text-zinc-400">
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100 block mb-1">
-                    Inventory Manager Shift Handover
-                  </span>
-                  As an Inventory Manager, you do not need to log branch sales. Please summarize your warehouse operations, shipments received, or handover notes below.
-                </div>
 
                 <div>
                   <label className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 block mb-1.5">
-                    End of Day (EOD) Report / Notes
+                    End of Day (EOD) Report / Notes <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     rows={4}
@@ -207,6 +207,61 @@ export function SalesLogModal({
                     placeholder="e.g. Received 50kg tako mix from supplier, audited branch 2 stock, all central warehouse items counted."
                     className="w-full rounded-md border border-input bg-background p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   />
+                </div>
+
+                {/* IM Shift Expenses */}
+                <div className="space-y-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase text-yellow-600 dark:text-zinc-300 tracking-wider">
+                      Shift Expenses (Optional)
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                        Amount (₱)
+                      </label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={imExpenses}
+                        onChange={(e) => setImExpenses(e.target.value)}
+                        placeholder="0"
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={imExpenseCategory}
+                        onChange={(e) => setImExpenseCategory(e.target.value)}
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="Inventory / Operations">Inventory / Operations</option>
+                        <option value="Supplies & Packaging">Supplies & Packaging</option>
+                        <option value="Transportation / Logistics">Transportation / Logistics</option>
+                        <option value="Maintenance / Repairs">Maintenance / Repairs</option>
+                        <option value="Miscellaneous">Miscellaneous</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block mb-1">
+                      Expense Description / Remarks (Optional)
+                    </label>
+                    <Input
+                      type="text"
+                      value={imExpenseNotes}
+                      onChange={(e) => setImExpenseNotes(e.target.value)}
+                      placeholder="e.g. Purchased cargo tape and warehouse cleaning supplies"
+                      className="h-9 text-xs"
+                    />
+                  </div>
                 </div>
               </div>
             ) : (
@@ -255,6 +310,7 @@ export function SalesLogModal({
                         value={cheese}
                         onChange={(e) => setCheese(e.target.value)}
                         className="font-semibold text-base text-center h-11"
+                        placeholder="0"
                       />
                     </div>
 
@@ -268,6 +324,7 @@ export function SalesLogModal({
                         value={octobits}
                         onChange={(e) => setOctobits(e.target.value)}
                         className="font-semibold text-base text-center h-11"
+                        placeholder="0"
                       />
                     </div>
 
@@ -281,6 +338,7 @@ export function SalesLogModal({
                         value={crab}
                         onChange={(e) => setCrab(e.target.value)}
                         className="font-semibold text-base text-center h-11"
+                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -306,6 +364,7 @@ export function SalesLogModal({
                           onChange={(e) => setCashOnhand(e.target.value)}
                           required
                           className="pl-7 h-10 text-sm font-semibold w-full"
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -322,6 +381,7 @@ export function SalesLogModal({
                           value={gcashPayment}
                           onChange={(e) => setGcashPayment(e.target.value)}
                           className="pl-7 h-10 text-sm font-semibold w-full"
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -338,6 +398,7 @@ export function SalesLogModal({
                           value={expenses}
                           onChange={(e) => setExpenses(e.target.value)}
                           className="pl-7 h-10 text-sm font-semibold w-full"
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -354,6 +415,7 @@ export function SalesLogModal({
                           value={free}
                           onChange={(e) => setFree(e.target.value)}
                           className="pl-7 h-10 text-sm font-semibold w-full"
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -373,6 +435,7 @@ export function SalesLogModal({
                           value={shortVal}
                           onChange={(e) => setShortVal(e.target.value)}
                           className="pl-7 h-10 text-sm font-semibold w-full font-mono text-red-600"
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -392,6 +455,7 @@ export function SalesLogModal({
                           value={overVal}
                           onChange={(e) => setOverVal(e.target.value)}
                           className="pl-7 h-10 text-sm font-semibold w-full font-mono text-emerald-600"
+                          placeholder="0"
                         />
                       </div>
                     </div>
@@ -408,6 +472,7 @@ export function SalesLogModal({
                           value={trashLeftover}
                           onChange={(e) => setTrashLeftover(e.target.value)}
                           className="pl-7 h-10 text-sm font-semibold w-full"
+                          placeholder="0"
                         />
                       </div>
                     </div>

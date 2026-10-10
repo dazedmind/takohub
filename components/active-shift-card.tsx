@@ -12,6 +12,7 @@ interface ActiveShiftCardProps {
   shift: ActiveEmployeeShift;
   onOpenSalesLog?: () => void;
   onViewSelfie?: () => void;
+  onForceEndShift?: (shift: ActiveEmployeeShift) => void;
   isAdminView?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function ActiveShiftCard({
   shift,
   onOpenSalesLog,
   onViewSelfie,
+  onForceEndShift,
   isAdminView = false,
 }: ActiveShiftCardProps) {
   const [runningTime, setRunningTime] = useState<string>(
@@ -93,18 +95,31 @@ export function ActiveShiftCard({
 
         {/* Action buttons */}
         <div className="flex gap-2 pt-1">
-          {/* {onViewSelfie && (
+          {isAdminView && onViewSelfie && (
             <Button
               type="button"
               variant="tertiary"
               size="sm"
               onClick={onViewSelfie}
-              className="text-sm font-semibold flex-1 h-9 gap-1.5"
+              className="text-xs font-semibold flex-1 h-9 gap-1.5"
             >
-              <Eye size={15} />
+              <Eye size={14} />
               <span>Selfie Proof</span>
             </Button>
-          )} */}
+          )}
+
+          {isAdminView && onForceEndShift && (
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={() => onForceEndShift(shift)}
+              className="text-xs font-semibold flex-1 h-9 gap-1.5"
+            >
+              <LogOut size={14} />
+              <span>Force End Shift</span>
+            </Button>
+          )}
 
           {!isAdminView && onOpenSalesLog && (
             <Button

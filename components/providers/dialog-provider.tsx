@@ -81,7 +81,9 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
             </DialogTitle>
           </DialogHeader> */}
           <div className="flex flex-col items-center justify-center text-center -space-y-1">
-            {getIcon()}
+            <div className="animate-icon-pop flex items-center justify-center">
+              {getIcon()}
+            </div>
             <h2 className="font-semibold text-2xl">{options.title}</h2>
             <p className="py-2 text-base leading-tight text-center text-zinc-600 dark:text-zinc-400">{options.message}</p>
           </div>

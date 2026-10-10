@@ -322,11 +322,12 @@ export default function SalaryPage() {
           </Button>
           <Button
             onClick={openCreate}
+            variant="primary"
             size="sm"
-            className="text-xs font-semibold bg-orange-600 hover:bg-orange-700 text-white"
+            className="gap-1.5 text-xs font-semibold h-9"
           >
-            <Plus size={16} className="mr-1.5" />
-            Add New Tier
+            <Plus size={15} />
+            <span>Add New Tier</span>
           </Button>
         </div>
       </div>
@@ -622,8 +623,8 @@ export default function SalaryPage() {
               </Button>
               <Button
                 type="submit"
+                variant="secondary"
                 disabled={isSaving}
-                className="bg-orange-600 hover:bg-orange-700 text-white"
               >
                 {isSaving ? "Saving..." : editingTier ? "Save Changes" : "Create Tier"}
               </Button>

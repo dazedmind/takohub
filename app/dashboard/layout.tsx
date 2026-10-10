@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "@/components/dashboard-sidebar";
 import { SessionProvider, useSessionContext } from "@/components/providers/session-provider";
@@ -18,6 +19,7 @@ export default function DashboardLayout({
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useSessionContext();
+  const pathname = usePathname();
 
   if (isLoading) {
     return (
@@ -54,9 +56,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          {/* Main Scrollable Viewport */}
+          {/* Main Scrollable Viewport with Dynamic Module Tab Transition */}
           <main className="flex-1 overflow-y-auto">
-            <div className="p-4 sm:p-6 max-w-7xl mx-auto w-full">{children}</div>
+            <div
+              key={pathname}
+              className="p-4 sm:p-6 max-w-7xl mx-auto w-full animate-fade-in-up"
+            >
+              {children}
+            </div>
           </main>
         </div>
       </div>

@@ -51,7 +51,7 @@ export default function LoginPage() {
 
   return (
     <main className="flex flex-col flex-1 items-center justify-center min-h-screen p-4 bg-zinc-100 dark:bg-zinc-950">
-      <div className="w-full max-w-sm space-y-6">
+      <div className="w-full max-w-sm space-y-6 animate-fade-in-up">
         {/* Brand Header */}
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
