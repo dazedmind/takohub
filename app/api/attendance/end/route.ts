@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       const octobits = parseInt(body.octobits || 0, 10);
       const crab = parseInt(body.crab || 0, 10);
       const cashOnhand = parseInt(body.cashOnhand || 0, 10);
-      const expenses = parseInt(body.expenses || 0, 10);
+      const expensesAmt = parseInt(body.expenses || 0, 10);
       const gcashPayment = parseInt(body.gcashPayment || 0, 10);
       const free = parseInt(body.free || 0, 10);
       const trashLeftover = parseInt(body.trashLeftover || 0, 10);
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       const shortOver = parseInt(body.shortOver || 0, 10);
 
       const grossSales = totalSales;
-      const netSales = calculateNetSales(grossSales, expenses, salary, free, shortOver, trashLeftover);
+      const netSales = calculateNetSales(grossSales, expensesAmt, salary, free, shortOver, trashLeftover);
 
       // Create Sales Record
       const [salesRecord] = await db
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
           totalPlates,
           totalSales,
           cashOnhand,
-          expenses,
+          expenses: expensesAmt,
           salary,
           gcashPayment,
           free,
@@ -75,9 +75,9 @@ export async function POST(request: Request) {
         .returning();
 
       // Log to expenses table if branch seller had expenses
-      if (expenses > 0) {
+      if (expensesAmt > 0) {
         await db.insert(expenses).values({
-          amount: expenses,
+          amount: expensesAmt,
           category: "Store Operations",
           description: remarksText.trim() || `Branch Seller shift expense (Branch #${activeShift.branchId})`,
           branchId: activeShift.branchId,
