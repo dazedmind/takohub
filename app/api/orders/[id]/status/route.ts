@@ -22,7 +22,7 @@ export async function PATCH(
   }
 
   try {
-    const body = (await request.json()) as { status: OrderStatus; notes?: string };
+    const body = (await request.json()) as { status: OrderStatus; notes?: string; approvedItems?: Array<{ itemId: number; approvedQty: number }> };
     const nextStatus = body.status;
 
     if (!nextStatus) {
@@ -74,7 +74,8 @@ export async function PATCH(
         .map((item) => ({
           ...item,
           itemId: Number(item.itemId),
-          quantity: Number(item.quantity) || 0,
+          // Use approvedQty if set, otherwise fall back to requested quantity
+          quantity: Number(item.approvedQty ?? item.quantity) || 0,
         }))
         .filter((item) => item.itemId && item.quantity > 0);
 
@@ -218,6 +219,19 @@ export async function PATCH(
 
     if (body.notes !== undefined) {
       updatePayload.notes = body.notes.trim();
+    }
+
+    // When transitioning to PROCESSING, save approved quantities into orderList
+    if (nextStatus === "PROCESSING" && body.approvedItems && body.approvedItems.length > 0) {
+      const approvedMap = new Map(body.approvedItems.map((a) => [a.itemId, a.approvedQty]));
+      const rawItems = (order.orderList as OrderBasketItem[]) || [];
+      const updatedOrderList = rawItems.map((item) => ({
+        ...item,
+        approvedQty: approvedMap.has(Number(item.itemId))
+          ? approvedMap.get(Number(item.itemId))!
+          : (item.approvedQty ?? item.quantity),
+      }));
+      updatePayload.orderList = updatedOrderList as any;
     }
 
     const [updatedOrder] = await db

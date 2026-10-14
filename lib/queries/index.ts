@@ -281,11 +281,19 @@ export function useSubmitOrderMutation() {
 export function useUpdateOrderStatusMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: number; status: OrderStatus }) => {
+    mutationFn: async ({
+      orderId,
+      status,
+      approvedItems,
+    }: {
+      orderId: number;
+      status: OrderStatus;
+      approvedItems?: Array<{ itemId: number; approvedQty: number }>;
+    }) => {
       const res = await fetch(`/api/orders/${orderId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, approvedItems }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update order status");

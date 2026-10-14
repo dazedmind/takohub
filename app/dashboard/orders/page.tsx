@@ -48,6 +48,8 @@ export default function OrdersPage() {
 
   // Selected Order for Details & Status Dialog
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
+  // Approved quantities keyed by itemId (set by IM/Admin when reviewing pending orders)
+  const [approvedQtys, setApprovedQtys] = useState<Record<number, number>>({});
 
   const isBS = user?.role === "BS";
   const isIM = user?.role === "IM";
@@ -172,7 +174,16 @@ export default function OrdersPage() {
       return;
     }
     try {
-      await updateStatusMutation.mutateAsync({ orderId, status: nextStatus });
+      // For PROCESSING: pass the approved quantities
+      const approvedItems =
+        nextStatus === "PROCESSING"
+          ? selectedOrder?.items?.map((item) => ({
+              itemId: item.itemId,
+              approvedQty: approvedQtys[item.itemId] ?? item.quantity,
+            }))
+          : undefined;
+
+      await updateStatusMutation.mutateAsync({ orderId, status: nextStatus, approvedItems });
       setSelectedOrder(null);
       dialog.show({
         title: "Success",
@@ -180,6 +191,8 @@ export default function OrdersPage() {
           ? "Order received and completed! Stock transferred to branch."
           : nextStatus === "READY"
           ? "Order marked as for delivery"
+          : nextStatus === "PROCESSING"
+          ? "Order is now being processed with approved quantities."
           : `Order updated to ${nextStatus}`,
         type: "success"
       });
@@ -525,7 +538,12 @@ export default function OrdersPage() {
       )}
 
       {/* Order Details & Status Workflow Dialog */}
-      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedOrder(null);
+          setApprovedQtys({});
+        }
+      }}>
         <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
           {/* FIXED HEADER: Order # & Details (Status, Date, Notes, Fulfilled On) */}
           <div className="p-5 pb-3 flex-shrink-0 border-b border-zinc-200 dark:border-zinc-800 space-y-3">
@@ -580,7 +598,7 @@ export default function OrdersPage() {
           </div>
 
           {/* THE ONLY SCROLLABLE AREA: Items Order */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-5">
+          <div className="flex-1 min-h-0 overflow-y-auto p-2">
             <div className="flex items-center justify-between mb-2">
               <span className="font-semibold text-zinc-800 dark:text-zinc-200 text-sm">
                 Items Requested
@@ -589,24 +607,53 @@ export default function OrdersPage() {
                 {selectedOrder?.items?.length || 0} items
               </span>
             </div>
-            <div className=" overflow-hidden">
+            <div className="overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 z-10">
                   <tr className="text-left">
                     <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900">Item</th>
-                    <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900 text-center">Qty</th>
+                    <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900 text-center">Req. Qty</th>
+                    <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900 text-center">Approved Qty</th>
                     <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900">Unit</th>
                     <th className="py-2.5 px-3 font-semibold bg-zinc-50 dark:bg-zinc-900 text-right">Price</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {selectedOrder?.items?.map((item) => {
+                    const isPendingEditable = selectedOrder.status === "PENDING" && (isIM || isAdmin);
+                    const approvedQty = approvedQtys[item.itemId] ?? item.approvedQty ?? item.quantity;
                     const basePrice = Number(item.price) || 0;
-                    const itemTotal = basePrice * (Number(item.quantity) || 0);
+                    const itemTotal = basePrice * approvedQty;
                     return (
                       <tr key={item.itemId} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
                         <td className="py-2.5 px-3 font-semibold text-zinc-900 dark:text-zinc-100">{item.itemName}</td>
-                        <td className="py-2.5 px-3 font-semibold text-base text-center">{item.quantity}</td>
+                        {/* Requested Quantity */}
+                        <td className="py-2.5 px-3 text-center">
+                          <span className="font-semibold text-base text-zinc-700 dark:text-zinc-300">{item.quantity}</span>
+                        </td>
+                        {/* Approved Quantity — editable when PENDING + IM/Admin, otherwise display */}
+                        <td className="py-2 px-3 text-center">
+                          {isPendingEditable ? (
+                            <input
+                              type="text"
+                              // min={0}
+                              value={approvedQtys[item.itemId] ?? item.approvedQty ?? item.quantity}
+                              onChange={(e) => {
+                                const val = Math.max(0, Number(e.target.value));
+                                setApprovedQtys((prev) => ({ ...prev, [item.itemId]: val }));
+                              }}
+                              className="w-20 h-8 rounded-md border bg-orange-50 dark:bg-orange-950/30 text-center text-sm font-bold text-orange-700 dark:text-orange-300 "
+                            />
+                          ) : (
+                            <span className={`font-bold text-base ${
+                              (item.approvedQty !== undefined && item.approvedQty !== item.quantity)
+                                ? "text-orange-600 dark:text-orange-400"
+                                : "text-zinc-900 dark:text-zinc-100"
+                            }`}>
+                              {item.approvedQty ?? item.quantity}
+                            </span>
+                          )}
+                        </td>
                         <td className="py-2.5 px-3 text-zinc-500">{item.unit}</td>
                         <td className="py-2.5 px-3 text-right">
                           <span className="font-semibold text-zinc-900 dark:text-zinc-100">
@@ -627,10 +674,10 @@ export default function OrdersPage() {
               <span className="text-xs uppercase font-semibold text-zinc-500 tracking-wider">Total:</span>
               <span className="text-lg font-extrabold text-zinc-900 dark:text-zinc-100 font-mono">
                 {formatPeso(
-                  selectedOrder?.items?.reduce(
-                    (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
-                    0
-                  ) || 0
+                  selectedOrder?.items?.reduce((sum, item) => {
+                    const qty = approvedQtys[item.itemId] ?? item.approvedQty ?? item.quantity;
+                    return sum + (Number(item.price) || 0) * qty;
+                  }, 0) || 0
                 )}
               </span>
             </div>

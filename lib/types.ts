@@ -103,7 +103,8 @@ export interface OrderBasketItem {
   itemId: number;
   itemName: string;
   unit: string;
-  quantity: number;
+  quantity: number;       // Requested quantity (always preserved)
+  approvedQty?: number;   // Approved quantity set by IM/Admin; used for stock transfer
   price?: number;
 }
 

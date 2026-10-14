@@ -55,7 +55,9 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         .map((item) => ({
           ...item,
           itemId: Number(item.itemId),
-          quantity: Number(item.quantity) || 0,
+          // Use approvedQty if set, otherwise fall back to requested quantity
+          quantity: Number(item.approvedQty ?? item.quantity) || 0,
+          requestedQty: Number(item.quantity) || 0,
         }))
         .filter((item) => item.itemId && item.quantity > 0);
 
